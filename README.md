@@ -1,59 +1,66 @@
 # Islesrisk
 
-A turn-based island-conquest game for the browser: take an archipelago,
-hold it, and try not to lose it to a flood. A modern re-take on the
-ruleset of Soleau Software's *Isle Wars* (1994) — **not** a port and not
-a clone of it. Portfolio project, not commercial.
+A turn-based island-conquest game for the desktop, built in Godot 4:
+take an archipelago, hold it, and try not to lose it to a storm. A
+modern re-take on the ruleset of Soleau Software's *Isle Wars* (1994) —
+**not** a port and not a clone of it.
 
 Underneath it is a **configurable engine**: boards generated or
 hand-drawn at any size, rules as a data object, two to eight players,
-seven victory conditions, and scenarios that save and travel as a link.
+seven victory conditions, and scenarios that save and travel as files.
 What a player picks is a *preset* — Classic, Blitz, Archipelago — which
 is just a named rule set with a board attached.
 
-**Nothing runs yet.** This repository currently contains specifications
-and decisions only — no code, no build. The plan is in
+The goal is for it to be **beautiful**: painterly illustrated 2D, an
+animated sea, coastlines that read as drawn, and weather that is also a
+game mechanic.
+
+**Nothing runs yet.** This repository contains specifications and
+decisions only — no Godot project, no code. The plan is in
 [ROADMAP.md](ROADMAP.md); Iteration 0 is the scaffolding that makes
-`npm run dev` mean something.
+`godot` mean something here.
 
 ## The short pitch
 
 Risk-likes are not a gap in the market, and neither is the match rule
 that once looked like the hook — Antiyoy already ships a version of it,
-free (see [DECISIONS.md](DECISIONS.md), "Mobile competitors"). What is
-genuinely unoccupied is the rest of *Isle Wars*' idea: **a board that
-keeps moving under you** — floods, earthquakes and revolts aimed at
-whoever is winning, and production centres that wander from isle to
-isle — in a five-minute game, in a phone browser, with no install.
+free (see [DECISIONS.md](DECISIONS.md), "Mobile competitors"). Two
+things are genuinely unoccupied:
+
+- **A board that keeps moving under you.** Floods, earthquakes and
+  revolts aimed at whoever is winning, and production centres that
+  wander from isle to isle. No current conquest game does either.
+- **Beauty.** Desktop Risk-likes are overwhelmingly functional-looking —
+  UI over a map. A conquest game that is genuinely lovely to look at is
+  a sharper differentiator than any rule, and the two arguments meet in
+  the same feature: the hazards are also the best thing on screen.
 
 Configurability is not the pitch; the deep end of this genre is made of
 options and nobody is short of them. It is here because a data-driven
 engine is the right way to *build* this, and because it makes presets
 cheap to try.
 
-That constraint is the product. A faithful 46-territory reproduction is
-explicitly *not* the goal; the 1994 original already runs in a browser
-tab under DOSBox, for free, and beating that on faithfulness is not a
-winnable game.
-
 ## Docs
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — system design and stack choices
+- [ARCHITECTURE.md](ARCHITECTURE.md) — system design, stack, the art
+  direction constraint, project layout
 - [RULES.md](RULES.md) — the game specification: the `RuleSet` surface,
-  the Classic defaults, and the contract `packages/rules` has to satisfy
+  the Classic defaults, and the contract `core/rules` has to satisfy
 - [SCENARIOS.md](SCENARIOS.md) — scenarios, map generation, the victory
   condition catalogue, presets and sharing
 - [DECISIONS.md](DECISIONS.md) — the *why* behind product and design
-  choices, including the case against building this
+  choices, including the case against building this at all
 - [ROADMAP.md](ROADMAP.md) — iteration plan and current status
 - [CLAUDE.md](CLAUDE.md) — working notes and repo conventions
 
 ## Stack (planned)
 
-Inherited wholesale from [Geoclick](https://github.com/diegoami/Geoclick2027),
-minus the geography: npm-workspace monorepo, SvelteKit + TypeScript,
-pure-TS engine packages under `packages/` (`rules`, `mapgen`, `ai`),
-Vitest, ESLint + Prettier, four quality gates on a pre-push hook, static
-deploy to Netlify. The board is inline SVG, not a map renderer. Web only
-for now — Tauri and Capacitor shells are additive in this layout and
-cost nothing to defer.
+Godot 4.7.x, statically typed GDScript, gdUnit4 run headless, gdtoolkit
+for lint and format, four quality gates on a pre-push hook and in GitHub
+Actions. Pure engine code in `core/` — no `Node`, no scene tree, no
+global RNG, enforced by a test. Rendering is Godot 2D: polygons,
+`CanvasItem` shaders, 2D lights and particles.
+
+Desktop (Windows, Linux, macOS) first; Android later; no browser.
+Whether this becomes a commercial release is decided after the vertical
+slice — see [DECISIONS.md](DECISIONS.md), "Commercial intent".

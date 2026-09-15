@@ -1,9 +1,9 @@
 # Islesrisk — Game specification
 
 The authoritative description of how a game plays, and the contract
-`packages/rules` must satisfy. Written to be read by a person and
-testable line by line: every rule below should end up as at least one
-Vitest case.
+`core/rules` must satisfy. Written to be read by a person and testable
+line by line: every rule below should end up as at least one gdUnit4
+case.
 
 Scenario structure, map generation and the victory-condition catalogue
 have their own document: [SCENARIOS.md](SCENARIOS.md).
@@ -238,9 +238,11 @@ trivially defensible:
 | The Teeth | 3 | 4 | Three entrances, worth more because it bleeds |
 
 Adjacency is an explicit symmetric sea-lane graph and must be connected.
-The board is a single SVG `viewBox`, portrait-first, tap targets no
-smaller than 44px at the default zoom. Exact isle names, paths and lanes
-are Iteration 1's deliverable, not this document's.
+The board is laid out in its own coordinate space and framed by the
+camera, so it is resolution-independent and a window resize reframes
+rather than reflows. Hit targets stay generous from the start — a cheap
+habit now, an expensive retrofit when Android arrives. Exact isle names,
+polygons and lanes are Iteration 1's deliverable, not this document's.
 
 Generated boards use the same `GameMap` structure and pass the same
 validator — see [SCENARIOS.md](SCENARIOS.md).

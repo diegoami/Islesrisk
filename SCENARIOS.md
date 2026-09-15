@@ -52,8 +52,11 @@ Three properties this shape is chosen for:
 
 ## Maps: authored and generated are the same thing
 
-A `GameMap` (ARCHITECTURE.md) is a list of isles with SVG paths, an
-authored symmetric sea-lane graph, and archipelago groupings. **The
+A `GameMap` (ARCHITECTURE.md) is a list of isles with polygons, an
+authored symmetric sea-lane graph, and archipelago groupings. The
+polygon is plain geometry — it feeds rendering, hit-testing and the art
+system alike, and there is no per-isle artwork anywhere in the data,
+because the generator invents isles no artist will ever see. **The
 generator is one producer of that structure, not a parallel system.**
 Generated and hand-drawn maps are the same type, pass the same
 validator, and are indistinguishable to the engine, the AI and the
@@ -84,7 +87,9 @@ adjacency from coordinates.
    for the same tap target.
 2. **Cells.** Voronoi over those points, then shrink and round each cell
    into an island silhouette. Isle shapes and the adjacency graph come
-   from one construction, so they can never disagree.
+   from one construction, so they can never disagree. The silhouette
+   must be good enough to *draw* — the art system's coastline treatment
+   has nothing else to work with (ARCHITECTURE.md, "Looking good").
 3. **Lanes.** Start from the Delaunay edges. Take a spanning tree first
    — connectivity is guaranteed by construction, not by retrying — then
    add edges back up to `laneDensity`, preferring short ones.
@@ -106,7 +111,8 @@ map fails CI rather than the game:
 - The lane graph is connected
 - Every isle belongs to exactly one archipelago; no archipelago empty
 - Enough isles for the scenario's players, and `centres ≤ isles`
-- Every isle has a path, a label point, and a non-degenerate area
+- Every isle has a simple (non-self-intersecting) polygon, a label
+  point inside it, and a non-degenerate area
 - **Fairness checks** for generated maps: no isle with degree 1 unless
   `layout` asks for it, no archipelago that is a single isle worth a
   bonus, and starting positions with comparable degree
@@ -169,20 +175,30 @@ to know early.
 
 ## Sharing
 
-A scenario is small and it compresses well, so a game set-up travels as
-a URL fragment — no account, no server, no install. `#s=<compressed>`
-for the scenario, `#s=…&seed=…` to hand someone the exact game.
+Scenarios are files. Export writes one JSON document; import reads one,
+validates it, and either loads it or refuses with a reason. A **share
+code** — a short string encoding a preset id, generator params and a
+seed — covers the common case of "play the board I just played" without
+moving a file at all, and is short enough to paste into a chat.
 
-This is the one place the project's smallness is an advantage over the
-app-store competition (DECISIONS.md, "Mobile competitors"): a link into
-a specific situation is something an installed app cannot do as
-cheaply. Oversized fragments fall back to a local scenario id; a
-fragment that fails to parse or fails validation loads nothing and says
-so, rather than starting a half-configured game.
+The URL-fragment scheme an earlier draft specified died with the web
+build (DECISIONS.md, "Godot and the desktop"). Files and share codes are
+what a desktop game can offer instead; it is less frictionless and
+that loss is recorded rather than glossed.
 
-**A shared scenario is untrusted input.** It is data from a stranger:
-validate it fully before use, never `eval` any part of it, cap sizes,
-and reject unknown `kind` tags rather than ignoring them.
+**An imported scenario is untrusted input**, and in Godot that is
+sharper than it sounds:
+
+- **JSON only, `JSON.parse` only.** Never `ResourceLoader`, never
+  `.tres`/`.res`, never `load()` on a path from a file. Godot resource
+  files can carry embedded scripts, so importing one from a stranger is
+  arbitrary code execution — and scenario sharing is exactly the path an
+  attacker would use.
+- Validate fully before use; cap sizes, isle counts and string lengths.
+- Reject unknown fields and unknown `kind` tags rather than ignoring
+  them — a silently dropped victory condition is a game that cannot end.
+- A file that fails validation loads nothing and says why. Never start a
+  half-configured game.
 
 ## Versioning
 

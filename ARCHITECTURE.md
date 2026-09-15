@@ -1,10 +1,10 @@
 # Islesrisk — Architecture
 
-Islesrisk is a turn-based conquest **engine** with a game on top of it.
-The rules descend from Soleau Software's *Isle Wars* (1994) — see
+Islesrisk is a turn-based conquest **engine** with a game on top of it,
+built in **Godot 4** for the desktop, and meant to be beautiful. The
+rules descend from Soleau Software's *Isle Wars* (1994) — see
 [RULES.md](RULES.md) for the specification and [DECISIONS.md](DECISIONS.md)
-for why it is a re-take rather than a port. Portfolio project, not
-commercial. First milestone is a playable hot-seat game in a browser.
+for why it is a re-take rather than a port.
 
 "Engine" is meant literally and it is the central architectural
 commitment: the board is generated or authored at any size, the rules
@@ -14,205 +14,213 @@ Classic, Blitz, Archipelago — which is nothing but a named rule set with
 a map source attached. Scenario structure, map generation and the
 victory catalogue are in [SCENARIOS.md](SCENARIOS.md).
 
-The reasoning for paying that cost up front is in DECISIONS.md
-("Generic engine, Classic preset"): genericity in the *data model* is
-nearly free if it is designed in at the start and very expensive to
-retrofit, while genericity in the *UI* is the reverse — so the engine is
-fully general from Iteration 2 and the scenario editor is the last thing
-built, if it is built at all.
+Target: **desktop first** (Windows, Linux, macOS), **Android later**.
+No browser — see DECISIONS.md, "Godot and the desktop". Whether it ends
+up on Steam is decided after the vertical slice (Iteration 5); until
+then it is built *as if* commercial, which mostly means disciplined
+asset provenance and a name that is genuinely ours.
 
-## Strategy: one web core, one shell for now
+## Stack
 
-Same shape as Geoclick — a single web app as the source of truth,
-packageable later — but deliberately **web only** at this stage. Tauri
-(desktop) and Capacitor (mobile) slot into an npm-workspace monorepo
-without disturbing what's already there, so scaffolding them before
-there is a game to install buys nothing. The pitch is "a phone browser,
-five minutes, no install"; the browser build *is* the product.
+| Layer | Choice |
+|---|---|
+| Engine | **Godot 4.7.x** (4.7.2 stable as of 2026-08-18) |
+| Language | **GDScript**, statically typed throughout |
+| Rendering | Godot 2D — `Polygon2D` boards, `CanvasItem` shaders, 2D lights, GPUParticles2D |
+| Tests | **gdUnit4**, run headless (`godot --headless`) |
+| Lint/format | **gdtoolkit** — `gdlint`, `gdformat --check` |
+| CI | GitHub Actions (gdUnit4 has an official action); the same gates on a pre-push hook |
+| Data | JSON for maps, presets and scenarios — never Godot `Resource` files (see "Loading data is a security boundary") |
+| Distribution | Godot export templates → desktop builds on a GitHub releases page |
 
-**Framework: SvelteKit + TypeScript**, `adapter-static`, deployed to
-Netlify. Not a judgement call so much as an inheritance: it's the stack
-the developer already runs, already has gates for, and already knows the
-failure modes of.
+**Why GDScript, not C#**: typed GDScript is now within noise of C# for
+game logic, it wins on editor integration and iteration speed, and it is
+what 84% of the ecosystem's addons and answers assume. C# would win on a
+codebase past ~10k lines and on external tooling, which is a real
+argument for an engine-heavy project like this one — but not enough to
+give up the iteration loop on a solo 2D game. The decision is cheap to
+revisit only while `core/` is small, so it is worth revisiting *at*
+Iteration 2's end and not after.
 
-## What is *not* inherited from Geoclick
+## What did not survive the pivots
 
-**No MapLibre GL JS, no PMTiles, no Natural Earth.** Geoclick needs a
-real vector-tile renderer because it teaches real geography at arbitrary
-zoom. Islesrisk draws fictional shapes — a dozen on a Classic board, up
-to around sixty on the largest generated ones — at one zoom per screen.
-That is an inline **SVG**: `<path>` per isle, CSS fill for ownership, a
-`<text>` for the army count, pointer events for free. A tile renderer
-here would be megabytes of dependency to solve a problem the platform
-already solves.
+Recorded because half of this document used to say otherwise: SvelteKit,
+TypeScript, npm workspaces, inline SVG, Netlify, and the whole
+"no-install, five-minute phone browser" pitch are gone. So is sharing a
+scenario by URL. [RULES.md](RULES.md) and [SCENARIOS.md](SCENARIOS.md)
+survived the move nearly intact, which is the payoff for having written
+them as data specifications rather than as descriptions of a program.
 
-Sixty interactive paths is comfortable for SVG; several hundred would
-not be, and that — not the rules — is what actually caps map size. If a
-preset ever wants a thousand isles, the renderer is what gets replaced,
-behind the same `GameMap`, and nothing else moves.
+## The core is pure, headless, and deterministic
 
-Consequence worth stating: the map is a *game board*, not a map. Isles
-have no coordinates in any real projection; adjacency is authored data
-(a sea-lane graph), never derived from geometry.
+`core/` is plain GDScript — classes extending `RefCounted`, never
+`Node`. It does not touch the scene tree, does not load scenes, does not
+read files, does not use `get_tree()`, signals, `Time`, or the global
+`randi()`. One entry point:
+
+```gdscript
+Rules.apply_action(state: GameState, action: Action) -> GameState
+```
+
+Total, deterministic, no I/O. Every source of chance draws from a
+`RandomNumberGenerator` whose seed and state live *inside* `GameState`.
+
+Three things depend on this, which is why it is a rule and not a
+preference: a save file, a replay and a bug report become the same small
+object (a seed, a rule set and an action list); the AI can evaluate a
+move by playing it against a copy of the state; and the whole ruleset is
+testable headlessly in milliseconds, with no window and no frames.
+
+**Purity is enforced, not trusted.** A test greps `core/` for `Node`,
+`get_tree`, `randi(`, `randf(`, `Time.`, `load(`, `preload(` and fails
+the gates on a hit. Without that, the boundary erodes in a week — this
+is the cheapest test in the project and the one that protects everything
+else.
+
+**Integer arithmetic in the rules.** Combat, reinforcement and hazard
+maths stay on integers; floats appear only in presentation. Godot's
+`RandomNumberGenerator` (PCG32) reproduces integer draws identically
+across platforms, and float accumulation does not reliably do so. A
+replay that desyncs between a Windows and a Linux build would invalidate
+every guarantee above.
 
 ## Domain model
 
 **Isle** — one territory. Holds armies, has an owner, belongs to an
-archipelago, and connects to other isles by explicit sea lanes. Whether
-a map was drawn by hand or produced by the generator, it is this same
+archipelago, and connects to others by explicit sea lanes. Whether a map
+was drawn by hand or produced by the generator, it is this same
 structure and passes the same validator.
 
 ```
 Isle {
-  id            IsleId              // stable string key
-  name          string
-  archipelago   ArchipelagoId
-  neighbours    IsleId[]            // authored, symmetric, never derived
-  path          string              // SVG path data, board coordinates
-  labelAt       { x, y }            // where the army count is drawn
-}
-
-Archipelago {
-  id      ArchipelagoId
-  name    string
-  isles   IsleId[]
-  bonus   number                    // reinforcements for holding all of it
-}
-
-GameMap {
-  id, name
-  isles         Isle[]
-  archipelagos  Archipelago[]
-  viewBox       string              // the SVG board extent
+  id            String
+  name          String
+  archipelago   String
+  neighbours    Array[String]      // authored, symmetric, never derived
+  polygon       PackedVector2Array // board coordinates
+  label_at      Vector2
 }
 ```
 
-**GameState** — everything needed to render a game and to continue it.
-Ownership and army counts are keyed by isle rather than nested in it, so
-the map stays immutable data that several games can share.
+The polygon is plain geometry, not a drawing: it feeds `Polygon2D`,
+`Line2D` coastlines, hit-testing and the art system alike. There is no
+per-isle artwork anywhere in the data, because the generator invents
+isles the artist will never see (see "Looking good").
+
+**GameState** — everything needed to render a game and continue it.
 
 ```
 GameState {
   map        GameMap
-  rules      RuleSet                 // resolved and inline, never a reference
-  players    Player[]                // colour, kind: 'human' | 'ai', objectives
-  owner      Record<IsleId, PlayerId>
-  armies     Record<IsleId, number>
-  turn       { player: PlayerId, phase: Phase, number, ... }
-  hands      Record<PlayerId, Card[]>
-  centres    IsleId[]                // production centres, they move
-  rng        RngState                // seeded, part of the state
-  log        Event[]
+  rules      RuleSet            // resolved and inline, never a reference
+  players    Array[Player]      // colour, kind, objectives
+  owner      Dictionary         // isle_id -> player_id
+  armies     Dictionary         // isle_id -> int
+  turn       { player, phase, number }
+  hands      Dictionary
+  centres    Array[String]
+  rng        { seed, state }
+  log        Array[Event]
 }
 ```
 
-`rules` sits **inside** the state, resolved from any `extends` chain and
-stored in full. A game therefore carries its own rules: tuning Classic
-next month cannot retroactively change a save file, and a bug report
-arrives with the exact configuration that produced it. The cost is a few
-hundred bytes per save, which is the cheapest thing in this document.
+`rules` sits inside the state, resolved from any `extends` chain and
+stored in full, so tuning a preset next month cannot rewrite a save.
 
-**Scenario** — the serializable set-up that *produces* a `GameState`:
-map source, rule set, players, optional hand-placed starting position,
-victory conditions. It is the unit that gets saved, shared by URL and
-replayed. Fully specified in [SCENARIOS.md](SCENARIOS.md).
+**Scenario** — the serializable set-up that *produces* a `GameState`.
+The unit that is saved, shared and replayed. See SCENARIOS.md.
 
 Phases per turn: `reinforce → attack → redeploy → hazards`. Hazards
-(floods, quakes, revolts, centre movement) resolve at the *end* of a
-turn, so a player always sees the board they are about to act on. A
-phase the configuration empties is skipped rather than shown empty.
-[RULES.md](RULES.md) is the authority on each.
+resolve at the *end* of a turn, so a player always sees the board they
+are about to act on. A phase the configuration empties is skipped.
 
-## The engine is pure, and the game is a fold
+**No rule may be a compiled-in assumption**, in any file. Every rule is
+a field of `state.rules`; code assuming the match rule is on, that
+hazards exist, or that victory means conquest is a bug — the AI's code
+most of all, where it is easiest to hide and hardest to notice.
 
-`packages/rules` is framework-agnostic TypeScript with one entry point:
-
-```
-applyAction(state: GameState, action: Action): GameState
-```
-
-Total, deterministic, no I/O, no `Math.random`, no `Date.now`. Every
-source of chance — dice, hazard rolls, card draws, initial placement —
-draws from the seeded `rng` carried *inside* the state. Three things
-fall out of that, and they are the reason for the constraint:
-
-- **A game is its seed plus its action list.** Save files, bug reports
-  and replays are the same small object. "It let me attack with 3 into
-  4" arrives as something reproducible.
-- **The AI can search.** An opponent that wants to evaluate a move plays
-  it against a copy of the state. With hidden I/O or ambient randomness
-  it cannot.
-- **Tests are cheap.** The whole ruleset is exercised without a DOM, in
-  Vitest, in milliseconds.
-
-**No rule may be a compiled-in assumption**, in any package. Every rule
-is a field of `state.rules`, and code that assumes the match rule is on,
-that hazards exist, or that victory means conquest is a bug — the AI's
-code most of all, since it is the easiest place for such an assumption
-to hide and the hardest place to notice it. The cross-configuration
-tests at the end of RULES.md exist to catch exactly this.
-
-`packages/ai` depends on `packages/rules` and nothing else — it consumes
-the same public API a player does, reads the same `RuleSet`, and cannot
-reach into state the rules don't expose. `packages/mapgen` likewise
-produces `GameMap`s and knows nothing about play. `app/` owns rendering,
-input and persistence and holds no rule logic: if a check can be written
-in the engine it belongs there, with the UI merely declining to offer
-illegal actions.
-
-## Repo layout (planned — nothing exists yet)
+## Project layout
 
 ```
-/app                    SvelteKit web app: board, turn UI, game shell
-/packages/rules         pure TS: RuleSet, state, actions, combat, hazards,
-                        victory conditions, the map validator
-/packages/mapgen        pure TS: seeded map generation → GameMap
-/packages/ai            pure TS: opponent policies, built on /rules
-/data                   authored maps, presets, built-in scenarios
+/project.godot
+/core/            pure GDScript, headless, no Node
+  /rules/         RuleSet, GameState, actions, combat, hazards, victory
+  /mapgen/        seeded generation -> GameMap
+  /ai/            opponent policies, built on /rules only
+  /validate/      the map + scenario validator, shared by both sources
+/game/            scenes: board rendering, UI, input, effects, audio
+/art/             shaders, materials, palettes, fonts, sfx
+/data/            authored maps, presets, built-in scenarios (JSON)
+/test/            gdUnit4 suites — unit, property, and the purity guard
+/tools/           gates script, export helpers
 ```
 
-`mapgen` depends on `rules` only for the `GameMap` type and the
-validator, never the other way round: the engine must not know that
-procedural generation exists.
+`game/` may call into `core/`. `core/` must not know `game/` exists, and
+`mapgen` must not know how play works.
 
-Matching Geoclick's `app` + `packages/*` npm workspaces, root scripts
-delegating with `--workspaces --if-present`, and the same four gates
-(`check`, `test`, `lint`, `build`) behind a committed `.githooks/pre-push`.
+## Looking good
 
-## Screens
+The goal is a beautiful game, and the single most important constraint
+comes from pairing that with procedural maps:
 
-Small on purpose — this is a game, not an app.
+> **The beauty has to be a system, not artwork.** The generator invents
+> boards at runtime, so nothing can be hand-illustrated per map. Every
+> gorgeous thing must be procedural — shaders, materials, coastline
+> treatment, lighting, weather, motion — applied to arbitrary polygons.
 
-| Route | View |
-|---|---|
-| `/` | Start: preset, board size, opponents, difficulty; resume a game |
-| `/play` | The board. One screen, phase bar, end-turn button |
-| `/play/result` | Outcome, a replayable seed and link, back to start |
+This is how the reference points do it: *Bad North* and *ISLANDERS*
+both look superb with procedurally arranged islands because their look
+is a lighting-and-material system, not bespoke per-level art. The same
+route, in 2D:
 
-The board is the product; everything else is a door into it. The start
-screen's job is to keep the engine's generality *out* of the player's
-way: a preset, a size, a number of opponents — not a wall of toggles.
-Everything else a `RuleSet` can express is reachable by loading a
-scenario, and later by an editor, but is never the first thing a new
-player meets. A `#s=…` URL fragment opens a shared scenario directly,
-validated before anything is rendered (SCENARIOS.md, "Sharing").
+- **Water first.** An animated `CanvasItem` shader under everything —
+  swell, caustics, foam that reads the coastline's distance field. Water
+  is most of the screen and most of the impression.
+- **Coastlines, not outlines.** Each isle's polygon gets an inset shore
+  band, a sand/rock gradient and a hand-drawn-feeling edge (a noise
+  offset along the `Line2D`), so a machine-made polygon reads as drawn.
+- **Chart, not board.** The visual register is an illustrated nautical
+  chart that has come alive: paper grain, ink linework, a restrained
+  palette, generous type. It flatters flat colour, which is what
+  ownership needs anyway.
+- **Ownership must stay readable.** Colour identifies a player, and no
+  atmospheric effect may compromise that. A colour-blind-safe palette
+  and a non-colour ownership cue are requirements, not polish.
+- **Hazards are the set piece**, and this is where the art direction and
+  the design differentiator finally meet: a flood is a storm crossing
+  the map, a quake shakes the isle and cracks its shore, a revolt raises
+  a flag and a smoke plume. These are the moments a player will screenshot.
+- **Juice.** Tweened army counts, a satisfying capture, camera nudges,
+  layered ambience. Cheap, and most of what separates "clean" from
+  "gorgeous".
+
+The renderer draws whatever the generator emits. An art idea that only
+works on a hand-placed board is not usable — that is the test every
+visual decision has to pass, and the reason the art system is validated
+against generated maps in Iteration 6 rather than assumed to survive.
+
+## Loading data is a security boundary
+
+Maps, presets and scenarios are **JSON**, loaded with `JSON.parse` and
+validated before use. They are explicitly **never** Godot `Resource`
+files: `.tres`/`.res` can carry embedded scripts, so `ResourceLoader` on
+a file from a stranger is arbitrary code execution, and scenario sharing
+is exactly that path. Unknown fields and unknown `kind` tags are
+rejected rather than ignored, sizes are capped, and a file that fails
+validation loads nothing and says why.
 
 ## Storage
 
-Local-first, no accounts, no backend — same posture as Geoclick, for the
-same reason (nothing here needs a server, and a server is a thing to
-run, pay for and secure). One in-progress `GameState`, a short results
-history and any scenarios the player has saved or opened from a link,
-all in `localStorage`, behind a small repository interface so a
-Tauri/Capacitor SQLite backend can replace it later without the app
-noticing.
+Local, no accounts, no backend. `user://` holds the in-progress game, a
+short results history, and saved or imported scenarios. A save carries
+its resolved rule set and its seed, so it is simultaneously a replay and
+a reproducible bug report.
 
-Because the state carries its resolved rule set and its seed, a save is
-also a replay and a bug report — one small JSON object that reproduces
-the game exactly.
+## Platforms
 
-## Hosting
-
-Netlify, static build from `main`, config at the repo root so
-`npm install` resolves the workspace. Directly copied from Geoclick's
-`netlify.toml`, including the reasoning recorded there.
+Desktop is the design target: mouse, keyboard, a window that resizes,
+and GPU headroom for the water. Android comes after the game is worth
+installing — which mainly constrains the UI, so hit targets stay
+generous and nothing depends on hover from the start. Those are cheap
+habits now and expensive retrofits later; nothing else about the
+architecture is bent for a platform that isn't shipping yet.

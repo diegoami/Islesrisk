@@ -68,6 +68,13 @@ changed the plan, so it gets its own entry rather than a footnote.
   *browser*, no install, a shareable link. Antiyoy is an app, and the
   install is the friction. This is the one axis where being a small web
   project is an advantage rather than a handicap.
+  **Struck the same day**: the retarget to desktop Godot gives this up
+  entirely — there is no browser build, and scenarios travel as files,
+  not links. It was a real advantage and it is gone; what replaces it is
+  in "Gorgeous, and what that costs". The rest of this entry — the
+  match rule being taken, the hazards and centres being unoccupied —
+  still holds, and on desktop the competitive set changes as noted
+  there.
 - **The rest of the mobile field, and the axis each occupies**:
   [State.io](https://play.google.com/store/apps/details?id=io.state.fight)
   (real-time hypercasual, reportedly $1M+/month at peak — proves the
@@ -201,7 +208,7 @@ than allowed to become unbounded.
   sunk cost is still small. Art and map authoring are the cheapest work
   to have wasted and so they come last.
 - **The AI plays through the public rules API**, with no privileged
-  access to state (`packages/ai` depends only on `packages/rules`). It
+  access to state (`core/ai` depends only on `core/rules`). It
   cheats only where a difficulty level says so in the open, if ever.
 
 ## Rules: ours, not reverse-engineered (2026-09-15)
@@ -224,8 +231,106 @@ than allowed to become unbounded.
   can't perceive reads as the game being arbitrary; one they can read as
   the game having an opinion.
 
+## Godot and the desktop (2026-09-15)
+
+The product owner's direction: target the desktop, build it in Godot,
+make it beautiful. This supersedes the web stack outright.
+
+- **Godot 4.7.x, GDScript, statically typed.** 4.7.2 is current stable
+  (2026-08-18). Typed GDScript is now within noise of C# for game logic;
+  GDScript wins on editor integration, iteration speed, and the fact
+  that most of the ecosystem's addons and answers assume it. C# would
+  win past ~10k lines and on external tooling — a real argument for an
+  engine-heavy project — so the decision is scheduled for one explicit
+  revisit at the end of Iteration 2, while `core/` is still small enough
+  to move. Not before, and not after.
+- **Desktop first, Android later, no browser.** Chosen by the product
+  owner. Worth noting what it costs, since earlier entries were built on
+  it: the no-install pitch and URL-shared scenarios are gone, and with
+  them the one axis where this project beat an installed app. Android is
+  post-POC and the only concession made for it now is cheap habits —
+  generous hit targets, nothing depending on hover.
+- **The purity boundary is enforced by a test, not by discipline.**
+  `core/` is plain `RefCounted` GDScript with no scene tree, no file I/O
+  and no global RNG, and a gate greps for the forbidden symbols. In a
+  game engine the temptation to reach for `get_tree()` from rule code is
+  constant, and the boundary is what makes the engine testable,
+  replayable and AI-searchable at all.
+- **Integer arithmetic in the rules.** Godot's `RandomNumberGenerator`
+  reproduces integer draws identically across platforms; float
+  accumulation does not. A replay that desyncs between the Windows and
+  Linux builds would void every determinism guarantee, and this is
+  cheaper to decide now than to debug later.
+- **JSON, never Godot `Resource` files, for anything loaded.** `.tres`
+  can carry embedded scripts, so `ResourceLoader` on a shared scenario
+  is arbitrary code execution. Scenario sharing is precisely that path.
+
+## Gorgeous, and what that costs (2026-09-15)
+
+"I want to make a gorgeous game" is now a project goal, and painterly
+illustrated 2D is the register (product owner's choice over stylized 3D
+and 2.5D).
+
+- **The beauty has to be a system, not artwork.** This is the binding
+  constraint, and it comes from pairing "gorgeous" with "random maps":
+  the generator invents boards at runtime, so nothing can be
+  hand-illustrated per map. Water shader, coastline treatment, palette,
+  lighting, weather, motion — applied to arbitrary polygons. *Bad North*
+  and *ISLANDERS* look superb over procedural islands for exactly this
+  reason, and they are the reference points.
+- **An art idea that only works on a hand-placed board is not usable.**
+  Stated as the test every visual decision must pass, and enforced by
+  validating the art system against generated maps in Iteration 6 rather
+  than hoping it survives.
+- **The look is a spike, not a polish phase.** Iteration 5, straight
+  after the AI gate. Art left until last is art that never happens, and
+  a "gorgeous" goal that first gets attention at Iteration 10 is a
+  wish. The spike also produces the artifact the commercial decision is
+  made on.
+- **Hazards are where the art direction and the design differentiator
+  meet**, which is the happiest accident in this project so far. The
+  mechanic nobody else has is also the most spectacular thing on screen:
+  a flood is a storm crossing the map, a quake cracks a shore, a revolt
+  raises smoke. Both arguments now point at the same feature.
+- **Ownership readability outranks atmosphere.** Colour identifies a
+  player; a colour-blind-safe palette and a non-colour ownership cue are
+  requirements, not polish. A beautiful board nobody can read is a
+  failed board.
+- **This is the first pivot that improved the market case.** Desktop
+  Risk-likes are overwhelmingly functional-looking — Age of Conquest IV,
+  Lux Delux, even RISK: Global Domination are UI over a map. A genuinely
+  beautiful conquest game is a sharper differentiator than the ruleset
+  ever was. It is also the most expensive thing to fake, which is
+  exactly why it differentiates.
+- **The cost, plainly**: art is now a critical path rather than a
+  finishing pass, the largest single unknown in the schedule, and the
+  skill least protected by the test suite. Nothing in the gates can tell
+  you the game looks bad.
+
+## Commercial intent: decide at the slice (2026-09-15)
+
+- **Build as if commercial; decide after Iteration 5.** The product
+  owner's call. Every doc previously said "portfolio project, not
+  commercial"; that is now an open question answered by looking at the
+  vertical slice.
+- **What "as if commercial" costs now, and it is little**: asset
+  provenance tracked in an ASSETS.md ledger from the first asset (a
+  licence you cannot reconstruct later is a rewrite of the art), a name
+  that is genuinely ours, and no borrowed-for-now placeholder that would
+  be awkward to ship. That is the whole discipline.
+- **What it does not mean**: no store pages, no marketing, no monetary
+  scope creep before there is a game. The decision is deliberately
+  scheduled for the moment there is something to judge.
+- **If it does go commercial, two things get sharper**: the IP posture
+  below, and the AI quality bar — a paid opponent is held to a standard
+  a free one is not.
+
 ## Name, art and IP posture (2026-09-15)
 
+- **Sharper now that a commercial release is possible** (see "Commercial
+  intent"). A free portfolio piece and a paid product built on the same
+  ruleset are not the same risk, and the name matters more in the second
+  case than the first.
 - **Not "Isle Wars", and no original assets.** Unlike the Imperial
   Conquest II work, *Isle Wars Pro* is **not abandonware** — Soleau has
   continued selling the registered version (about $12 by download, per
@@ -235,41 +340,35 @@ than allowed to become unbounded.
   provisional.** It reads as a Risk derivative, which is precisely the
   comparison the project is trying not to invite, and "Risk" is
   Hasbro's. A final name should be picked before any public deploy
-  (Iteration 9) and this entry amended with it.
+  (Iteration 11) and this entry amended with it.
 - **A courtesy email to Soleau is cheap and clears it properly.** They
   have historically been relaxed about their catalogue being
   redistributed. Optional, since nothing here requires permission, but
   it costs one email to remove all ambiguity.
 
-## Stack: inherited from Geoclick, minus the geography (2026-09-15)
+## Stack: SvelteKit, inherited from Geoclick — SUPERSEDED (2026-09-15)
 
-- **SvelteKit + TypeScript, npm workspaces, Vitest, ESLint/Prettier,
-  four gates on a pre-push hook, static deploy to Netlify.** Chosen for
-  continuity, not on the merits: it is the stack already running in
-  Geoclick2027, with known failure modes and a working gate setup to
-  copy. Re-deciding a stack per project is how hobby projects spend
-  their budget on tooling.
-- **No MapLibre GL JS, no PMTiles, no Natural Earth.** Geoclick needs a
-  vector-tile renderer because it teaches real geography at arbitrary
-  zoom. Islesrisk draws ~14 fictional shapes at one fixed zoom: that is
-  an inline SVG, and a tile renderer would be megabytes of dependency
-  solving a problem the browser already solves. The board is a game
-  board, not a map — isles have no real-world coordinates and adjacency
-  is authored, never derived from geometry.
-- **Web only for now** (product owner's call, 2026-09-15). Tauri and
-  Capacitor are additive in this layout, so deferring them costs
-  nothing; scaffolding two more shells before there is a game to install
-  costs real time. The pitch is a phone browser with no install, and the
-  web build *is* that.
-- **No backend, no accounts.** Nothing in a hot-seat game needs a
-  server, and a server is a thing to run, pay for and secure. Same
-  local-first posture as Geoclick.
+Replaced the same day by "Godot and the desktop" below. Kept as a
+one-line record rather than deleted, because the reasoning that was
+*wrong* here is instructive: the stack was chosen for continuity with
+Geoclick2027 rather than on the merits, which is a good default right
+up to the moment the product's target changes. It also carried "web
+only for now", which the retarget reversed outright.
+
+- **What survived the change**: no backend, no accounts. Nothing in a
+  hot-seat game needs a server, and a server is a thing to run, pay for
+  and secure.
+- **What survived intact and is the real lesson**: RULES.md and
+  SCENARIOS.md needed almost no edits, because they specify *data*, not
+  a program. The specs that described behaviour outlived two pivots;
+  the spec that described a stack did not survive one.
 
 ## The engine is pure and deterministic (2026-09-15)
 
-- **`applyAction(state, action) => state`, with the RNG seed *and the
-  resolved rule set* carried inside the state.** No `Math.random`, no
-  `Date.now`, no I/O anywhere in `packages/rules`. Determinism is over
+- **`Rules.apply_action(state, action) -> state`, with the RNG seed *and
+  the resolved rule set* carried inside the state.** No global `randi()`,
+  no `Time.`, no I/O anywhere in `core/` — and a test that greps for
+  them, because in a game engine this boundary erodes by accident. Determinism is over
   the quadruple (seed, rule set, map, actions) — which is why the rule
   set is stored inline in a save rather than referenced by name: a
   preset that gets tuned must not be able to change a game already
@@ -282,5 +381,5 @@ than allowed to become unbounded.
   milliseconds without a DOM.
 - **Rule checks live in the engine, never in the UI.** The UI's job is
   to decline to *offer* an illegal action; the engine's job is to reject
-  it anyway. Anything enforced only in Svelte is a rule the AI does not
-  have to obey.
+  it anyway. Anything enforced only in a scene or a UI script is a rule
+  the AI does not have to obey.
