@@ -5,6 +5,9 @@ The authoritative description of how a game plays, and the contract
 testable line by line: every rule below should end up as at least one
 Vitest case.
 
+Scenario structure, map generation and the victory-condition catalogue
+have their own document: [SCENARIOS.md](SCENARIOS.md).
+
 ## Provenance, and an honest warning about the numbers
 
 The *shape* of this ruleset comes from Soleau Software's **Isle Wars**
@@ -17,61 +20,67 @@ aren't copyrightable and this is a re-take, not a reproduction (see
 binaries; their exact reinforcement formula, bonus table, hazard
 frequencies and card triggers are not published anywhere verifiable, and
 nothing in this document was reverse-engineered from them. Every number
-below is a starting point chosen to make a five-minute game work, to be
-tuned by playing. Do not let a future reader mistake these for the
-original's values, and do not "restore" them to something a wiki claims.
+below is a starting point, to be tuned by playing. Do not let a future
+reader mistake these for the original's values, and do not "restore"
+them to something a wiki claims.
 
-## Players and victory
+## How to read this document: everything here is a default
 
-Four players: one human, three AI in the default game (hot-seat swaps
-humans in for any of them). A player is **eliminated** when they own no
-isles. The last player standing wins.
+The engine is **data-driven**. There is no rule below that is compiled
+in: each one is a field of a `RuleSet`, and a game is played by handing
+the engine a `RuleSet` alongside the map and the players. What this
+document describes is the **Classic** preset — the defaults, the tuning
+target, and the configuration every example uses.
 
-A player may **concede** at any time. When a human holds more than half
-the board *and* more than half the total armies, the AI players offer a
-collective surrender, which the human may accept for an immediate win or
-decline to play it out. This is lifted directly from *Isle Wars Pro*'s
-best idea: the endgame of a conquest game is a foregone conclusion long
-before it is over, and making the player grind it out is the single most
-common way these games waste their players' time.
+That has one consequence worth stating up front, because it constrains
+every line of engine code: **no rule may be expressed as an assumption.**
+"The attacker needs at least as many armies" is not a fact about the
+game, it is `combat.attackRule === 'match'`. Code that assumes otherwise
+— including the AI's — is a bug, and the property tests exist to catch
+it (see "Rules the engine must enforce").
 
-## Setup
+## The RuleSet
 
-1. Isles are dealt round-robin from a shuffled order until every isle
-   has an owner. With 14 isles and 4 players the split is 4/4/3/3; the
-   two players short get one extra starting army as compensation.
-2. Every isle starts with **1** army.
-3. Each player distributes **10** further armies across the isles they
-   own, one at a time, in turn order. AI players do this with their
-   normal placement policy.
+One serializable object, versioned, with no functions in it, so a rule
+set can live in a scenario file, a URL or a save game. Defaults shown
+are Classic.
+
+### `setup`
+
+| Key | Default | Meaning |
+|---|---|---|
+| `deal` | `'roundRobin'` | `'roundRobin'` \| `'random'` \| `'authored'` (scenario supplies ownership) |
+| `startingArmies` | `1` | Armies on every isle after the deal |
+| `distributionPool` | `10` | Extra armies each player places, one at a time, in turn order |
+| `shortStackBonus` | `1` | Extra armies for players dealt fewer isles than the leader |
 
 Setup draws entirely from the seeded RNG. Same seed, same deal.
 
-## A turn
+### `reinforcement`
 
-Four phases, always in this order: **reinforce → attack → redeploy →
-hazards**.
+| Key | Default | Meaning |
+|---|---|---|
+| `perIsleDivisor` | `3` | `floor(islesOwned / divisor)` |
+| `minimum` | `3` | Floor, applied after the divisor |
+| `archipelagoBonus` | `'authored'` | `'authored'` (map supplies it) \| `'bySize'` \| `'off'` |
+| `centreBonus` | `2` | Per production centre owned |
 
-### 1. Reinforce
+### `combat`
 
-The player receives:
+| Key | Default | Meaning |
+|---|---|---|
+| `attackRule` | `'match'` | `'match'`: attacker must hold **≥** the defender. `'classic'`: any attack allowed. `'threshold'`: attacker ≥ defender × `attackRatio` |
+| `attackRatio` | `1.0` | Only read when `attackRule === 'threshold'` |
+| `minArmiesToAttack` | `2` | Armies required on the attacking isle |
+| `attackerDice` | `{ max: 3, minus: 1 }` | `min(max, armies − minus)` |
+| `defenderDice` | `{ max: 2, minus: 0 }` | `min(max, armies − minus)` |
+| `ties` | `'defender'` | Who wins an equal pair |
+| `failurePenalty` | `'loseIsle'` | `'loseIsle'`: a failed attack that leaves the attacker on 1 army hands the isle to the defender and ends the phase. `'endPhase'` \| `'none'` |
+| `capture` | `'diceCount'` | Minimum armies that must advance: `'diceCount'` \| `'all'` \| `'one'` |
 
-- `floor(islesOwned / 3)`, minimum **3**; plus
-- the `bonus` of every archipelago they hold **entirely**; plus
-- **+2** per production centre they own (see Hazards).
-
-They place those armies on isles they own, any distribution.
-
-### 2. Attack
-
-Any number of attacks, in any order, or none.
-
-An attack is declared from an isle the player owns holding **at least 2
-armies**, against an adjacent isle owned by someone else.
-
-> **The match rule.** The attacking isle must hold **at least as many
-> armies as the defending isle**. An isle with 4 armies may not attack an
-> isle with 5.
+> **The match rule.** With the default `attackRule`, the attacking isle
+> must hold **at least as many armies as the defending isle**. An isle
+> with 4 armies may not attack an isle with 5.
 
 This is the rule the combat model is built around. It removes the
 dogpile: you cannot grind a strong isle down with a stream of hopeless
@@ -82,97 +91,141 @@ many* attacks to make.
 It is **not** the game's differentiator, and an earlier draft of this
 document wrongly said it was. Antiyoy — free, open source, on Android —
 inherits an equivalent rank rule from *Slay*. The hazards and the
-roaming centres below are the part nobody else is doing. See
+roaming centres are the part nobody else is doing. See
 [DECISIONS.md](DECISIONS.md), "Mobile competitors".
 
-Resolution, one round per declared attack:
+The failure penalty is what makes the match rule bite: an attack is a
+commitment with a real downside, not a free roll of the dice. Turning
+`attackRule` to `'classic'` without also turning the penalty off
+produces a harsher game than Risk, not a gentler one — a legitimate
+preset, but not an accident to stumble into.
 
-- Attacker rolls `min(3, attackingArmies - 1)` dice; defender rolls
-  `min(2, defendingArmies)` dice. Both sorted descending, paired up, one
-  army lost per pair by the lower roll; **defender wins ties**.
-- If the defending isle reaches 0 armies, the attacker captures it and
-  must move at least the number of dice they rolled, leaving at least 1
-  army behind.
-- **Failure penalty.** If an attack leaves the *attacking* isle with
-  exactly 1 army and the defender still holds theirs, the attacking isle
-  is **lost to the defender** (they garrison it with 1 army) and the
-  attacker's attack phase ends immediately.
+### `redeploy`
 
-That penalty is the second borrowed idea and it is what makes the match
-rule bite: an attack is a commitment with a real downside, not a free
-roll of the dice.
+| Key | Default | Meaning |
+|---|---|---|
+| `movesPerTurn` | `1` | Moves between adjacent owned isles, 1 army left behind |
+| `chain` | `false` | Whether a moved stack may move again |
 
-A player who captured at least one isle this turn draws **one card** at
-the end of the phase (see Cards). Maximum hand size **5**; a draw into a
-full hand is discarded.
+### `hazards`
 
-### 3. Redeploy
+**This block is the product.** A scan of what's shipping on mobile
+(DECISIONS.md, "Mobile competitors") found the match rule already taken
+and short-session conquest well served, but nothing current doing either
+of these: hazards that deliberately lean on the leader, and objectives
+that move on their own. Everything else in this spec is table stakes.
 
-One move: any number of armies from one owned isle to an adjacent owned
-isle, leaving at least 1 behind. One move per turn, not a chain.
+Resolved at the end of a turn, in listed order, from the seeded RNG.
 
-### 4. Hazards
+| Key | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Master switch |
+| `flood` | `{ chance: 0.08, lose: 'half' }` | A random isle loses half its armies, rounded down |
+| `quake` | `{ chance: 0.05, minArmies: 4, lose: 2 }` | A random isle of at least `minArmies` loses `lose` |
+| `revolt` | `{ chance: 0.06, target: 'leader', lose: 'third' }` | The leader's largest isle loses a third |
 
-**This phase is the product.** A scan of what's actually shipping on
-mobile (DECISIONS.md, "Mobile competitors") found the match rule
-already taken and short-session conquest well served, but nothing
-current doing either of the things below: hazards that deliberately lean
-on the leader, and objectives that move on their own. Everything else
-here is table stakes; this is the reason to build it.
+`revolt.target` may be `'leader'`, `'random'` or `'none'`. Hazards are a
+rubber band and the revolt is the one that does the work — it is
+deliberately aimed at whoever is winning, and the player should be able
+to see that it is. A rubber band the player can't perceive reads as the
+game being arbitrary; one they can read as the game having an opinion.
 
-Rolled at the end of the turn, resolved in this order, all from the
-seeded RNG. Together they should fire roughly **once every other turn**
-in the early game and be rare enough not to feel arbitrary.
+**Invariants, true under every configuration**: a hazard never takes an
+isle below 1 army, never eliminates a player, and never changes an
+owner. Ownership changes through attack only.
 
-- **Flood** (8%): one random isle loses half its armies, rounded down,
-  minimum 1 remaining.
-- **Earthquake** (5%): one random isle with 4+ armies loses 2.
-- **Revolt** (6%): the largest isle owned by the player with the most
-  isles loses a third of its armies, rounded down, minimum 1. Hazards
-  are a rubber band, and this is the one that does the work — it is
-  deliberately aimed at the leader, and the player should be able to see
-  that it is.
-- **Centres move** (every turn): each production centre has a 25% chance
-  of moving to a random adjacent isle, whoever owns it.
+### `centres`
 
-Hazards never eliminate a player and never leave an isle at 0 armies.
-Ownership only changes through attack, never through a hazard.
+| Key | Default | Meaning |
+|---|---|---|
+| `count` | `3` | Production centres on the board |
+| `bonus` | `2` | Reinforcements per turn to the owner |
+| `wanderChance` | `0.25` | Per centre, per turn, to move to a random adjacent isle |
 
-**Production centres.** Three isles carry a centre, placed at setup on
-isles nobody starts adjacent to where possible. A centre is worth +2
-reinforcements per turn to whoever owns it, and it wanders. They are the
-map's moving objectives: they make a board of otherwise interchangeable
-rocks have *places worth wanting*, and they keep wanting them from being
-a one-time land grab. Of everything in this spec they are the single
-most distinctive mechanic — no current mobile conquest game has an
-objective that relocates itself — so if a tuning pass has to choose what
-to protect, it protects these.
+Placed at setup on isles nobody starts adjacent to where possible. They
+are the map's moving objectives: they give a board of otherwise
+interchangeable rocks *places worth wanting*, and stop the wanting from
+being a one-time land grab. Of everything in this spec they are the
+single most distinctive mechanic — no current mobile conquest game has
+an objective that relocates itself — so if a tuning pass has to choose
+what to protect, it protects these.
 
-## Cards
+### `cards`
 
-Three kinds, drawn on a turn where the player captured an isle. Played
-during their own attack phase, one per turn.
+| Key | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Master switch |
+| `deck` | `{ bombard: 8, shield: 6, airlift: 6 }` | Composition; reshuffled from the discard when empty |
+| `drawOn` | `'capture'` | `'capture'` \| `'turn'` \| `'never'` |
+| `handMax` | `5` | A draw into a full hand is discarded |
+| `perTurn` | `1` | Cards playable per turn |
 
 | Card | Effect |
 |---|---|
 | **Bombard** | Remove 2 armies from any enemy isle. Cannot capture. |
 | **Shield** | Until the player's next turn, one owned isle cannot be bombarded and wins ties even when attacked at a disadvantage. |
-| **Airlift** | Move any number of armies between two *non-adjacent* owned isles, leaving 1 behind. |
+| **Airlift** | Move armies between two *non-adjacent* owned isles, leaving 1 behind. |
 
-Deck: 8 Bombard, 6 Shield, 6 Airlift, reshuffled from the discard when
-empty. No set-collection, no escalating trade-in bonus — that mechanic
-is the main engine of Risk's famous forty-minute midgame, and a
-five-minute game does not want it.
+No set-collection and no escalating trade-in bonus. That mechanic is the
+main engine of Risk's famous forty-minute midgame, and Classic does not
+want it — a preset that does can add it later behind a `sets` key.
+
+### `victory` and `surrender`
+
+`victory` is an ordered list of conditions, evaluated at the end of each
+turn; the first satisfied ends the game. Classic is a single
+`{ kind: 'conquest' }`. The full catalogue — domination, objectives,
+economy, survival, turn limit, regicide — and per-player asymmetric
+objectives are in [SCENARIOS.md](SCENARIOS.md).
+
+`surrender.offer` (default on, at half the isles *and* half the armies)
+makes the AI players collectively offer to concede when the human's win
+is obvious. Lifted from *Isle Wars Pro*'s best idea: a conquest game is
+decided long before it is over, and making the player grind it out is
+the commonest way these games waste their players' time.
+
+## A turn
+
+Four phases, always in this order: **reinforce → attack → redeploy →
+hazards**. Hazards resolve at the *end* of a turn, so a player always
+sees the board they are about to act on. Phases the configuration
+empties (no cards, no hazards) are skipped, not shown as empty.
+
+Attack resolution, one round per declared attack:
+
+- Attacker and defender roll per `combat.attackerDice` /
+  `defenderDice`. Both sorted descending, paired, one army lost per pair
+  by the lower roll; `combat.ties` breaks equals.
+- At 0 defending armies the attacker captures, advancing at least
+  `combat.capture` armies and leaving at least 1 behind.
+- `combat.failurePenalty` applies as described above.
+
+A player who captured at least one isle draws a card, per `cards.drawOn`.
+
+## Players
+
+Two to eight, any mix of human and AI, each with a colour, an optional
+AI policy and difficulty, and optionally their own victory conditions.
+The default game is one human and three AI, which is Classic's shape and
+*Isle Wars*'.
+
+Hot-seat swaps humans in for any seat. Nothing in the engine knows the
+difference between a human and an AI seat; both submit actions through
+the same API.
 
 ## Time budget
 
-The design target is a **complete four-player game in under five
-minutes** on the 14-isle starter map, with the human taking around 10-15
-turns. If playtesting shows games running long, the levers in order of
-preference are: reinforcement rate up, map smaller, hazard frequency up.
-Adding rules is not on the list.
+Classic targets a **complete four-player game in under five minutes** on
+a 14-isle board, with the human taking 10-15 turns. If playtesting runs
+long, the levers in order of preference are: reinforcement rate up, map
+smaller, hazard frequency up. Adding rules is not on the list.
 
-## The starter map: `small-sea`
+Other presets set their own targets, and larger boards are explicitly
+allowed to be long games — but **Classic is the preset the project is
+tuned against**, and a change that improves a large scenario at
+Classic's expense is a regression.
+
+## The Classic board: `small-sea`
 
 14 isles in 4 archipelagos, hand-authored, tuned so no archipelago is
 trivially defensible:
@@ -184,27 +237,39 @@ trivially defensible:
 | Warm Shoals | 3 | 2 | Compact, the natural first target |
 | The Teeth | 3 | 4 | Three entrances, worth more because it bleeds |
 
-Adjacency is authored as an explicit symmetric sea-lane graph and must
-be connected. The board is a single SVG `viewBox` designed portrait-first
-for a phone, with tap targets no smaller than 44px at the default zoom.
+Adjacency is an explicit symmetric sea-lane graph and must be connected.
+The board is a single SVG `viewBox`, portrait-first, tap targets no
+smaller than 44px at the default zoom. Exact isle names, paths and lanes
+are Iteration 1's deliverable, not this document's.
 
-Exact isle names, paths and lanes are Iteration 1's deliverable, not
-this document's.
+Generated boards use the same `GameMap` structure and pass the same
+validator — see [SCENARIOS.md](SCENARIOS.md).
 
 ## Rules the engine must enforce (test checklist)
 
-- An attack from an isle with 1 army is rejected.
-- An attack against a stronger isle is rejected — the match rule, at
-  equality *and* one either side of it.
-- A non-adjacent attack is rejected.
-- Attacking your own isle is rejected.
+Under Classic:
+
+- An attack from an isle below `minArmiesToAttack` is rejected.
+- An attack against a stronger isle is rejected — at equality *and* one
+  either side of it.
+- A non-adjacent attack, and an attack on your own isle, are rejected.
 - Defender wins ties.
 - The failure penalty transfers the isle and ends the phase.
-- Capture moves at least the dice-count, leaves at least 1 behind.
-- Reinforcement floor of 3 applies to a player down to one isle.
-- Archipelago bonus requires *every* isle in it.
-- One redeploy per turn; one card per turn; hand caps at 5.
-- No hazard ever takes an isle to 0 or changes an owner.
+- Capture advances at least the dice count and leaves at least 1 behind.
+- The reinforcement floor applies to a player down to one isle.
+- An archipelago bonus requires *every* isle in it.
+- One redeploy per turn; one card per turn; hand caps at `handMax`.
 - Eliminating the last opponent ends the game immediately, mid-phase.
-- Same seed + same actions ⇒ identical final state (the property test
-  that guards everything above).
+
+Across configurations:
+
+- **No hazard, under any configuration, takes an isle below 1 army,
+  eliminates a player, or changes an owner.**
+- `attackRule: 'classic'` permits the attacks `'match'` rejects, and
+  changes nothing else.
+- Disabling a subsystem (`hazards`, `centres`, `cards`) removes it
+  entirely: no phase, no draw, no UI affordance, no crash.
+- Every preset in SCENARIOS.md plays 100 headless games to a legal
+  terminal state without throwing.
+- **Determinism**: same seed + same rule set + same map + same actions ⇒
+  identical final state. The property test that guards everything above.

@@ -92,7 +92,15 @@ changed the plan, so it gets its own entry rather than a footnote.
   should be played before anyone leans harder on this entry — it is
   free, and it is the one result that would change the plan again.
 
-## Scope: small map, short game (2026-09-15)
+## Scope: small map, short game (2026-09-15, scoped to the Classic preset the same day)
+
+**Amended**: the product owner asked for variable map sizes, custom
+rules and multiple victory conditions (see "Generic engine, Classic
+preset" below). Everything in this entry still holds — but it now
+describes **Classic**, the default preset and the tuning target, rather
+than the only game the engine can play. Large slow boards are legal and
+explicitly supported; they are simply not what the project is tuned
+against.
 
 - **14 isles, not 46 territories.** The original's 46-across-9-continents
   board is a forty-minute game and a large pile of hand-authored data
@@ -110,6 +118,70 @@ changed the plan, so it gets its own entry rather than a footnote.
   alone. Local multiplayer makes the game complete and shippable without
   it; online is a post-POC item with no date.
 
+## Generic engine, Classic preset (2026-09-15)
+
+The product owner's direction: reproduce *Isle Wars Pro*'s general
+gameplay, but with random map generation, scenario creation,
+configurable opponent counts, custom rules, varying sizes and different
+victory conditions. That is a bigger project than the one the first
+specs described, and this entry records how it is being absorbed rather
+than allowed to become unbounded.
+
+- **Generic in the data model from day one; generic in the UI last.**
+  This is the whole shape of the response. A rule that lives in a
+  `RuleSet` field costs a table lookup and one test; the same rule
+  discovered later, compiled into a dozen call sites and an AI
+  evaluation function, costs a rewrite. A *visual scenario editor*, on
+  the other hand, is a self-contained pile of UI work that nothing else
+  depends on — so the engine is fully data-driven from Iteration 2, and
+  the editor is post-POC. "Creating scenarios" is satisfied in the POC
+  by a documented JSON format, built-in scenarios and share links; the
+  editor makes that pleasant, later.
+- **Presets are the player-facing surface, not toggles.** The start
+  screen offers a preset, a size and an opponent count. Every option
+  added to that screen is paid for by every new player who has to read
+  past it, and a conquest game's first thirty seconds are where it is
+  won or lost. The generality is reachable through scenarios, not
+  through a settings wall.
+- **Classic stays the tuning target.** Five minutes, 14 isles, four
+  players. A change that improves a 50-isle scenario at Classic's
+  expense is a regression, and RULES.md says so. Without one preset
+  holding that line, "configurable" quietly becomes "tuned for nothing".
+- **No rule may be a compiled-in assumption.** Stated in RULES.md and
+  ARCHITECTURE.md, enforced by cross-configuration tests. The AI is the
+  likeliest place to violate this and the hardest place to notice it.
+- **The AI got materially harder, and this is the real cost.** An
+  opponent for one 14-isle board with one rule set is a tractable
+  problem. An opponent that must play acceptably at 12 isles and 50, with
+  the match rule on or off, with hazards on or off, and toward six
+  different victory conditions, is a substantially bigger one — a
+  `domination` game and a `survival` game want different behaviour from
+  the same code. **Mitigation**: the AI reads the rule set and the active
+  victory conditions as inputs; competence is *claimed* only for the
+  shipped presets and measured per-preset by the tournament harness;
+  other configurations are best-effort and say so. Iteration 4 remains
+  the go/no-go, and its bar is Classic — a project that cannot field an
+  opponent on its own default board does not get to attempt the general
+  case.
+- **Generated and authored maps are one type, one validator.** Two map
+  systems would diverge within a month and every downstream consumer
+  would grow a branch. The generator is a producer of the existing
+  structure, nothing more (SCENARIOS.md).
+- **Competitive note, since it cuts against the pivot**: an options
+  surface is not a differentiator. War.app has thousands of community
+  maps, Age of Conquest ships hundreds, Lux Delux has had pluggable AI
+  for two decades — the deep end of this genre is *made of* options, and
+  arriving with a configuration screen impresses nobody. Procedural
+  generation paired with the hazards is less common and is worth having;
+  the differentiator is still the moving board (see "Mobile
+  competitors"). Genericity here is justified as an *engine* property —
+  it makes the thing worth building as a piece of software, and it makes
+  presets cheap to try — not as a marketing claim.
+- **The honest cost**: roughly double the original scope, and one new
+  failure mode — a configurable engine that is excellent at nothing.
+  Classic-as-tuning-target and the Still Waters A/B preset (SCENARIOS.md)
+  are the two guards against it.
+
 ## The AI is the project's real risk (2026-09-15)
 
 - **Timeboxed as an explicit go/no-go gate**, Iteration 4. The original's
@@ -118,6 +190,11 @@ changed the plan, so it gets its own entry rather than a footnote.
   opponent. If a tolerable opponent isn't working after the iteration's
   budget, that is a signal about the project, not a prompt to spend
   another month.
+- **The gate is judged on Classic only.** The generic-engine pivot makes
+  the full problem much larger (see that entry), and it would be easy to
+  fail the gate on the general case while the actual game is fine. The
+  question at Iteration 4 is the narrow one: is the opponent tolerable
+  on the default board, under the default rules.
 - **Find that out before drawing a map.** The order in
   [ROADMAP.md](ROADMAP.md) puts a headless rules engine and a playable
   hot-seat board first precisely so the AI can be attempted while the
@@ -158,7 +235,7 @@ changed the plan, so it gets its own entry rather than a footnote.
   provisional.** It reads as a Risk derivative, which is precisely the
   comparison the project is trying not to invite, and "Risk" is
   Hasbro's. A final name should be picked before any public deploy
-  (Iteration 7) and this entry amended with it.
+  (Iteration 9) and this entry amended with it.
 - **A courtesy email to Soleau is cheap and clears it properly.** They
   have historically been relaxed about their catalogue being
   redistributed. Optional, since nothing here requires permission, but
@@ -190,9 +267,13 @@ changed the plan, so it gets its own entry rather than a footnote.
 
 ## The engine is pure and deterministic (2026-09-15)
 
-- **`applyAction(state, action) => state`, with the RNG seed carried
-  inside the state.** No `Math.random`, no `Date.now`, no I/O anywhere in
-  `packages/rules`.
+- **`applyAction(state, action) => state`, with the RNG seed *and the
+  resolved rule set* carried inside the state.** No `Math.random`, no
+  `Date.now`, no I/O anywhere in `packages/rules`. Determinism is over
+  the quadruple (seed, rule set, map, actions) — which is why the rule
+  set is stored inline in a save rather than referenced by name: a
+  preset that gets tuned must not be able to change a game already
+  played or in progress.
 - **Three things depend on it, which is why it is a rule and not a
   preference**: a save file, a replay and a bug report become the same
   small object (a seed plus an action list); the AI can evaluate a move
