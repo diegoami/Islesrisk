@@ -12,11 +12,13 @@ and decisions only — no code, no build. The plan is in
 
 ## The short pitch
 
-Risk-likes are not a gap in the market (see [DECISIONS.md](DECISIONS.md),
-"Why build this at all"). One thing genuinely is missing: *Isle Wars*'
-particular rules — **an attacker must have at least as many armies as
-the defender**, plus floods, earthquakes, revolts and roaming production
-centres — playable on a phone, in one sitting, with no install.
+Risk-likes are not a gap in the market, and neither is the match rule
+that once looked like the hook — Antiyoy already ships a version of it,
+free (see [DECISIONS.md](DECISIONS.md), "Mobile competitors"). What is
+genuinely unoccupied is the rest of *Isle Wars*' idea: **a board that
+keeps moving under you** — floods, earthquakes and revolts aimed at
+whoever is winning, and production centres that wander from isle to
+isle — in a five-minute game, in a phone browser, with no install.
 
 That constraint is the product. A faithful 46-territory reproduction is
 explicitly *not* the goal; the 1994 original already runs in a browser

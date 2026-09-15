@@ -11,7 +11,7 @@ Keep this updated the same way as the other docs: when a decision is
 made, corrects an earlier one, or gets revisited, add or amend an entry
 here as part of that change, not as an afterthought.
 
-## Why build this at all (2026-09-15)
+## Why build this at all (2026-09-15, amended the same day — see "Mobile competitors")
 
 - **The market case is weak, and that is recorded here on purpose.** A
   market scan ran before any of this was written. Findings: *RISK:
@@ -30,16 +30,67 @@ here as part of that change, not as an afterthought.
   over a thing that already exists and cost nobody any work.
 - **So the project is justified on two grounds only**: it is a portfolio
   project whose real output is the codebase, and there is one genuine
-  product gap — *Isle Wars*' specific rules (the match rule, hazards,
-  roaming production centres) are not on the market anywhere, in any
-  form, at any price. Whether anyone wants them is untested. That is an
-  acceptable risk for a hobby project and would not be for a commercial
-  one.
+  product gap. **Amended the same day**: that first scan covered desktop
+  and browser and concluded the gap was *Isle Wars*' rules as a whole,
+  the match rule included. A follow-up scan of mobile found the match
+  rule already shipping, and narrowed the gap to the hazards and the
+  roaming centres — see "Mobile competitors" below, which supersedes
+  this bullet on what is actually unoccupied. Whether anyone wants it is
+  still untested, which is an acceptable risk for a hobby project and
+  would not be for a commercial one.
 - **Consequence, and the whole reason this entry exists**: the project
   must compete on what emulation cannot give — touch, a five-minute
   session, no install — and never on faithfulness. Any future proposal
   that starts "to be more like the original…" should be read against
   this entry first.
+
+## Mobile competitors, and which differentiator survives (2026-09-15)
+
+A second scan, this time of what is actually shipping on phones. It
+changed the plan, so it gets its own entry rather than a footnote.
+
+- **The closest current game is [Antiyoy](https://play.google.com/store/apps/details?id=yio.tro.antiyoy.android)**
+  (Android, free, open source, ~7MB, no ads or IAP) — a hex conquest
+  game by one developer, derived from Sean O'Connor's *Slay*, with 150+
+  campaign levels, a skirmish generator, a map editor, and an explicit
+  "Slay rules" toggle. It matters because the Slay lineage already has
+  a rank rule: a unit takes a tile only if it outranks the defender.
+  That is the same design intent as our match rule and it produces the
+  same effect.
+- **So the match rule is not the moat, and RULES.md was wrong to imply
+  it was.** Corrected there. Keep the rule — it is good, and it is what
+  makes the failure penalty bite — but stop selling the project on it.
+- **What survives the scan**: hazards that deliberately lean on the
+  leader, and production centres that relocate themselves. Nothing
+  current on mobile does either. That is the whole differentiator, and
+  it is now stated as such in RULES.md's hazards section.
+- **What also survives, and is worth more than it looks**: a phone
+  *browser*, no install, a shareable link. Antiyoy is an app, and the
+  install is the friction. This is the one axis where being a small web
+  project is an advantage rather than a handicap.
+- **The rest of the mobile field, and the axis each occupies**:
+  [State.io](https://play.google.com/store/apps/details?id=io.state.fight)
+  (real-time hypercasual, reportedly $1M+/month at peak — proves the
+  appetite for five-minute conquest, has no rules depth);
+  [The Battle of Polytopia](https://www.pockettactics.com/best-mobile-strategy-games)
+  (the UX quality bar for short turn-based conquest, but a 20-30 minute
+  4X); [RISK: Global Domination](https://apps.apple.com/us/app/risk-global-domination/id1051334048)
+  (the licensed incumbent); [War.app / Warzone](https://www.warzone.com/mobile)
+  (async multi-day depth, 10k+ games a day);
+  [Age of Conquest IV](https://play.google.com/store/apps/details?id=com.ageofconquest.app.user.aoc)
+  (Risk x Civ, long sessions, mixed reviews of its AI);
+  [territorial.io](https://play.google.com/store/apps/details?id=territorial.io)
+  (real-time, 500 players). None of them is close on all three of
+  turn-based, five minutes, and a moving board.
+- **Consequence for the plan**: hazards and centres moved out of their
+  own late iteration and into the engine iteration, so the hot-seat
+  game plays with them from the first playable build and the AI is
+  written against the real board once instead of twice. See
+  [ROADMAP.md](ROADMAP.md)'s ordering principle.
+- **Confidence, stated honestly**: this came from store listings,
+  reviews and coverage, not from playing them. Antiyoy specifically
+  should be played before anyone leans harder on this entry — it is
+  free, and it is the one result that would change the plan again.
 
 ## Scope: small map, short game (2026-09-15)
 
@@ -107,7 +158,7 @@ here as part of that change, not as an afterthought.
   provisional.** It reads as a Risk derivative, which is precisely the
   comparison the project is trying not to invite, and "Risk" is
   Hasbro's. A final name should be picked before any public deploy
-  (Iteration 8) and this entry amended with it.
+  (Iteration 7) and this entry amended with it.
 - **A courtesy email to Soleau is cheap and clears it properly.** They
   have historically been relaxed about their catalogue being
   redistributed. Optional, since nothing here requires permission, but

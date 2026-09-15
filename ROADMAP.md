@@ -13,16 +13,30 @@ Check items off as they land; update "Status" as iterations complete.
   `package.json`, no code, no build. Deliberate: the product owner asked
   for the specs to be reviewable before any scaffolding lands.
 - **Next up**: Iteration 0, on the product owner's go-ahead.
-- **Open before Iteration 8**: a final name (see DECISIONS.md, "Name,
+- **Reordered (2026-09-15)**: hazards and production centres were
+  Iteration 5, after the AI. A scan of what's shipping on mobile
+  (DECISIONS.md, "Mobile competitors") found them to be the project's
+  only real differentiator, so they moved into Iteration 2, the engine
+  iteration. See the ordering principle below.
+- **Open before the public deploy**: a final name (DECISIONS.md, "Name,
   art and IP posture"). "Islesrisk" is provisional.
 
 ## Ordering principle
 
-The AI is the project's real risk ([DECISIONS.md](DECISIONS.md)), so the
-plan front-loads everything needed to attempt it and defers everything
-that would be expensive to throw away. Rules engine and a clickable
-board come first; map art, hazards, cards and polish come after the
-opponent has proved workable. Iteration 4 is a genuine go/no-go.
+Two risks, not one, and the plan front-loads both.
+
+**The AI is the delivery risk**: a single-player conquest game is its
+opponent, and if that can't be made tolerable the project is over.
+**The hazards and the roaming centres are the product risk**: they are
+the only part of this not already available free on a phone, so if they
+aren't fun, a good AI just means a competent game nobody needs.
+
+Everything expensive to throw away — map art, cards, polish — waits
+behind both. Hazards and centres are pure rules and cost almost nothing
+on top of the engine, so they ship *with* it: that way the first
+playable build already has the thing the project is for, and the AI in
+Iteration 4 is written against the real board once instead of twice.
+Iteration 4 remains a genuine go/no-go.
 
 ## Iteration 0 — Repo & tooling scaffolding
 
@@ -56,29 +70,42 @@ Copy Geoclick's setup rather than re-deriving it.
 
 ## Iteration 2 — Rules engine, headless
 
-The core of the project. No UI work in this iteration at all.
+The core of the project, hazards and centres included. No UI work in
+this iteration at all.
 
 - [ ] `GameState`, `Action`, seeded RNG carried in state
 - [ ] Setup: deal, starting armies, distribution, centre placement
 - [ ] Reinforce: count, archipelago bonus, centre bonus, floor of 3
-- [ ] Attack: adjacency, **the match rule**, dice, ties to defender,
-      capture, **the failure penalty**
+- [ ] Attack: adjacency, the match rule, dice, ties to defender,
+      capture, the failure penalty
 - [ ] Redeploy; turn/phase advance; elimination; victory
+- [ ] **Hazards**: floods, earthquakes, revolts at the frequencies in
+      RULES.md; never to 0 armies, never an ownership change
+- [ ] **Production centres**: placement, the +2, the 25% wander
 - [ ] The full test checklist at the end of [RULES.md](RULES.md), plus
       the determinism property test (same seed + actions ⇒ same state)
-- **Done when**: a scripted game plays start to finish in Vitest, and
-  every listed rule has a failing-case test.
+- [ ] A scripted 100-game run reporting hazard rates and game length —
+      the first real evidence about whether the five-minute target and
+      the hazard frequencies are anywhere near right
+- **Done when**: a scripted game plays start to finish in Vitest, every
+  listed rule has a failing-case test, and the 100-game run's numbers
+  are recorded in DECISIONS.md.
 
 ## Iteration 3 — Hot-seat, playable
 
 - [ ] Click an isle to select, click an adjacent enemy isle to attack;
       illegal targets are not offered, and the reason is visible
 - [ ] Phase bar, reinforcement placement, redeploy, end turn
+- [ ] Hazards and centre moves shown as they happen — a rubber band the
+      player can't perceive reads as the game being arbitrary, and a
+      centre that teleports silently is a bug report waiting to happen
 - [ ] Result screen with the seed
 - [ ] Local persistence: resume an in-progress game, behind the
       repository interface from ARCHITECTURE.md
 - **Done when**: two humans can play a complete game on one device, on a
-  phone, without the console open.
+  phone, without the console open — **and the product owner can say
+  whether chasing the centres is fun.** That verdict is the point of
+  this iteration; the rest is plumbing.
 
 ## Iteration 4 — The opponent (go/no-go)
 
@@ -87,8 +114,9 @@ real risk".
 
 - [ ] `AiPolicy` interface; `packages/ai` depends only on `packages/rules`
 - [ ] A baseline policy good enough to be irritating: value isles by
-      archipelago progress, centres and border pressure; respect the
-      match rule when picking where to stack
+      archipelago progress, **current and likely-future centre
+      positions**, and border pressure; respect the match rule when
+      picking where to stack
 - [ ] Three difficulty levels; any cheating declared in the open
 - [ ] Headless tournament harness — policies played against each other
       over N seeds, win rates reported. The only honest way to tell
@@ -97,17 +125,7 @@ real risk".
 - **Go/no-go**: if the opponent isn't tolerable within the timebox, stop
   and reassess the project rather than extending. Recorded either way.
 
-## Iteration 5 — Hazards and production centres
-
-- [ ] Floods, earthquakes, revolts, at the frequencies in RULES.md
-- [ ] Centres: placement, +2 reinforcement, 25% wander
-- [ ] Hazards shown as they happen — a rubber band the player can't
-      perceive reads as the game being arbitrary
-- [ ] AI updated to value centres
-- **Done when**: hazards fire at roughly the intended rate over a
-  scripted 100-game run, and never take an isle to 0 or change an owner.
-
-## Iteration 6 — Cards
+## Iteration 5 — Cards
 
 - [ ] Bombard, Shield, Airlift; deck, draw-on-capture, hand cap, reshuffle
 - [ ] Hand UI; one card per turn
@@ -115,19 +133,22 @@ real risk".
 - **Done when**: each card has a test proving it can't be used to break
   an invariant (Bombard can't capture, Airlift can't strand an isle).
 
-## Iteration 7 — Tuning
+## Iteration 6 — Tuning
 
 The iteration that decides whether the game is any good.
 
 - [ ] Measure real game length; tune toward the five-minute target using
       the levers in RULES.md, **in their stated order**
+- [ ] Tune hazard rates and centre movement against real games rather
+      than the guesses in RULES.md — and protect the centres first if
+      something has to give (DECISIONS.md, "Mobile competitors")
 - [ ] The surrender offer
 - [ ] Touch pass: 44px targets, no hover-dependent affordances
 - [ ] Record what changed and why in DECISIONS.md
 - **Done when**: ten consecutive games land under five minutes and the
   product owner wants to play another one.
 
-## Iteration 8 — Public deploy
+## Iteration 7 — Public deploy
 
 - [ ] Final name decided, applied, DECISIONS.md amended
 - [ ] Netlify deploy from `main`; verify locally *and* on the live site
@@ -139,5 +160,5 @@ The iteration that decides whether the game is any good.
 
 Online multiplayer (the big one — see DECISIONS.md on why it's last),
 more maps, a map editor, Tauri desktop and Capacitor Android shells,
-sound and animation. None of it before Iteration 7 says the game is
+sound and animation. None of it before Iteration 6 says the game is
 worth installing.

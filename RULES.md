@@ -73,12 +73,17 @@ armies**, against an adjacent isle owned by someone else.
 > armies as the defending isle**. An isle with 4 armies may not attack an
 > isle with 5.
 
-This is the rule the whole game is built around, and the reason
-Islesrisk is not just another Risk clone. It removes the dogpile: you
-cannot grind a strong isle down with a stream of hopeless 1-army pokes,
-so stacking a border isle actually defends it, and the interesting
-question becomes *where* to spend a stack rather than *how many* attacks
-to make.
+This is the rule the combat model is built around. It removes the
+dogpile: you cannot grind a strong isle down with a stream of hopeless
+1-army pokes, so stacking a border isle actually defends it, and the
+interesting question becomes *where* to spend a stack rather than *how
+many* attacks to make.
+
+It is **not** the game's differentiator, and an earlier draft of this
+document wrongly said it was. Antiyoy — free, open source, on Android —
+inherits an equivalent rank rule from *Slay*. The hazards and the
+roaming centres below are the part nobody else is doing. See
+[DECISIONS.md](DECISIONS.md), "Mobile competitors".
 
 Resolution, one round per declared attack:
 
@@ -108,6 +113,13 @@ isle, leaving at least 1 behind. One move per turn, not a chain.
 
 ### 4. Hazards
 
+**This phase is the product.** A scan of what's actually shipping on
+mobile (DECISIONS.md, "Mobile competitors") found the match rule
+already taken and short-session conquest well served, but nothing
+current doing either of the things below: hazards that deliberately lean
+on the leader, and objectives that move on their own. Everything else
+here is table stakes; this is the reason to build it.
+
 Rolled at the end of the turn, resolved in this order, all from the
 seeded RNG. Together they should fire roughly **once every other turn**
 in the early game and be rare enough not to feel arbitrary.
@@ -131,7 +143,10 @@ isles nobody starts adjacent to where possible. A centre is worth +2
 reinforcements per turn to whoever owns it, and it wanders. They are the
 map's moving objectives: they make a board of otherwise interchangeable
 rocks have *places worth wanting*, and they keep wanting them from being
-a one-time land grab.
+a one-time land grab. Of everything in this spec they are the single
+most distinctive mechanic — no current mobile conquest game has an
+objective that relocates itself — so if a tuning pass has to choose what
+to protect, it protects these.
 
 ## Cards
 
