@@ -8,12 +8,13 @@ can resume cleanly from any point. Check items off as they land; update
 
 ## Status
 
-- **Done**: Iteration 0 — Godot project, four quality gates, gdUnit4
-  running headless, the `core/` purity guard, CI, and Linux/Windows
-  export presets. Tagged conceptually as v0.0.1; 7 tests green.
-- **Next up**: Iteration 1 — map data, the validator, and the
-  `small-sea` board rendering (deliberately ugly; the look is
-  Iteration 5).
+- **Done**: Iteration 0 (Godot project, four quality gates, the `core/`
+  purity guard, CI, export presets) and Iteration 1 (map types, the
+  validator, JSON reading, the `small-sea` board, and a renderer that
+  draws any map). 36 tests green.
+- **Next up**: Iteration 2 — the rules engine, headless: `RuleSet`,
+  `GameState`, the match rule, hazards and production centres. No UI
+  work at all in that iteration.
 - **Note on the specs-first start**: the repository held nothing but
   documents for its first four commits, and two pivots arrived in that
   window — web to Godot, and fixed game to configurable engine. Neither
@@ -75,16 +76,33 @@ Shipped as v0.0.1. Every item verified on Godot 4.7.2 before the push.
   something real to guard and to test, and this is the piece the
   determinism guarantee rests on.
 
-## Iteration 1 — Map data, validator, the Classic board
+## Iteration 1 — Map data, validator, the Classic board — **DONE (2026-09-17)**
 
-- [ ] `GameMap` / `Isle` / `Archipelago` in `core/rules`
-- [ ] The validator from [SCENARIOS.md](SCENARIOS.md), in `core/validate`
-- [ ] JSON loading with full validation and no `ResourceLoader`
-- [ ] `small-sea`: 14 isles, 4 archipelagos, per RULES.md
-- [ ] A board scene that renders any map — `Polygon2D` per isle, flat
-      colour, army counts. Deliberately ugly
+- [x] `GameMap` / `Isle` / `Archipelago` in `core/rules`, plain `RefCounted`
+- [x] `MapValidator` in `core/validate` — identity, membership, lanes,
+      geometry and connectivity, returning *every* problem rather than the
+      first, so fixing a map is one pass instead of ten
+- [x] `MapReader`: JSON text to a `GameMap`, pure, with untrusted-input
+      hardening — schema check, unknown fields rejected rather than
+      ignored, caps on isles, polygon points and string lengths. Parsing
+      validates too, so a caller cannot forget to
+- [x] `MapRepository` in `game/` does the file reading. `core/` may not
+      touch `FileAccess` (the purity guard enforces it), which also puts
+      I/O at the edge and leaves the parser testable with a string
+- [x] `small-sea`: 14 isles, 4 archipelagos, 17 lanes, matching RULES.md's
+      table — including the entrance counts each archipelago's note claims
+- [x] `BoardView` renders any map at any size and frames the camera to the
+      board's own coordinate space
 - **Done when**: the board renders at any map size, and a deliberately
-  broken map fails the gates.
+  broken map fails the gates. **Both hold** — 36 tests green, of which 15
+  are validator rules each breaking exactly one thing, and a test that
+  checks the shipped map against RULES.md's own table.
+- **Temporary**: land is tinted per archipelago so the grouping can be
+  checked by eye. Ownership colour replaces it in Iteration 3.
+- **Noted for tuning**: `small-sea` came out as a ring with an empty
+  middle. It honours every archipelago description in RULES.md, but there
+  is no contested centre — worth revisiting when the generator lands
+  (Iteration 6) or at tuning (Iteration 10).
 
 ## Iteration 2 — Rules engine, headless
 
