@@ -1,0 +1,15 @@
+# Godot
+.godot/
+/android/
+
+# Build output
+/build/
+
+# Test reports
+/reports/
+
+# Editor / OS
+*.swp
+.DS_Store
+.idea/
+.vscode/

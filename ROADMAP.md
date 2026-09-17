@@ -8,14 +8,16 @@ can resume cleanly from any point. Check items off as they land; update
 
 ## Status
 
-- **Done**: nothing is built. This repository holds specifications and
-  decisions only — [ARCHITECTURE.md](ARCHITECTURE.md),
-  [RULES.md](RULES.md), [SCENARIOS.md](SCENARIOS.md),
-  [DECISIONS.md](DECISIONS.md) and this file. No Godot project, no code.
-  Deliberate: the product owner asked for the specs to be reviewable
-  before any scaffolding lands, and two pivots have since arrived that
-  would have thrown away working code.
-- **Next up**: Iteration 0, on the product owner's go-ahead.
+- **Done**: Iteration 0 — Godot project, four quality gates, gdUnit4
+  running headless, the `core/` purity guard, CI, and Linux/Windows
+  export presets. Tagged conceptually as v0.0.1; 7 tests green.
+- **Next up**: Iteration 1 — map data, the validator, and the
+  `small-sea` board rendering (deliberately ugly; the look is
+  Iteration 5).
+- **Note on the specs-first start**: the repository held nothing but
+  documents for its first four commits, and two pivots arrived in that
+  window — web to Godot, and fixed game to configurable engine. Neither
+  threw away code.
 - **Retargeted (2026-09-15)**: Godot 4 on the desktop, painterly 2D,
   Android later, no browser (DECISIONS.md, "Godot and the desktop",
   "Gorgeous, and what that costs"). The previous web stack is gone;
@@ -46,19 +48,32 @@ a real look, on one board. That artifact answers the Steam question.
 Everything costly — the full art system, cards, the editor — waits
 behind it.
 
-## Iteration 0 — Godot project & gates
+## Iteration 0 — Godot project & gates — **DONE (2026-09-17)**
 
-- [ ] Godot 4.7.x project; `core/`, `game/`, `data/`, `test/`, `tools/`
-- [ ] Typed GDScript everywhere; `gdlint` + `gdformat --check` clean
-- [ ] gdUnit4 wired, running headless via `godot --headless`
-- [ ] **The purity guard**: a test that greps `core/` for `Node`,
-      `get_tree`, `randi(`, `randf(`, `Time.`, `load(`, `preload(` and
-      fails on a hit
-- [ ] `tools/gates.sh` — format, lint, test, export — on a committed
-      pre-push hook; the same four in GitHub Actions
-- [ ] Export presets for Windows and Linux producing a runnable binary
+Shipped as v0.0.1. Every item verified on Godot 4.7.2 before the push.
+
+- [x] Godot 4.7.x project; `core/`, `game/`, `data/`, `test/`, `tools/`
+- [x] Typed GDScript, enforced by `project.godot` warnings-as-errors
+      rather than by review; `gdlint` and `gdformat --check` clean
+- [x] gdUnit4 6.2.1 vendored at `addons/gdUnit4`, running headless with
+      no virtual display needed. Exits 0 green, 100 red
+- [x] **The purity guard** — `test/guard/test_core_purity.gd` scans
+      `core/` for scene-tree and `Resource` inheritance, `get_tree`,
+      signals, global RNG, `load`/`preload`, `FileAccess`, `Time.`,
+      `OS.` and `Input.`, reporting file, line and reason. Verified by
+      planting violations and watching it catch every one
+- [x] `tools/gates.sh` (format, lint, test, export) on a committed
+      `.githooks/pre-push`; the same four in GitHub Actions
+- [x] Export presets for Linux and Windows; the Linux build was produced
+      and run
+- [x] `.gitignore`, `.gitattributes`, and the `ASSETS.md` ledger started
 - **Done when**: a clean clone passes the gates and produces a desktop
-  build that opens a window.
+  build that opens a window. **It does** — 7 tests green and a 73 MB
+  Linux binary that starts, opens a window and exits cleanly.
+- **Carried slightly ahead of scope**: `core/rules/deterministic_rng.gd`,
+  the seeded generator every later system draws from. Scaffolding needs
+  something real to guard and to test, and this is the piece the
+  determinism guarantee rests on.
 
 ## Iteration 1 — Map data, validator, the Classic board
 

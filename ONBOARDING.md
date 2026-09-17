@@ -10,14 +10,17 @@ about *starting*, and about the things that are only learned by trying.
 
 ## Where the project actually is
 
-**Specifications and decisions only. No code, no Godot project yet.**
-Iteration 0 in [ROADMAP.md](ROADMAP.md) is the next thing to build, and
-it is the scaffolding that makes `godot` mean anything here.
+**Iteration 0 is done.** There is a Godot project, four working quality
+gates, a test suite and a desktop build. There is not yet a game: the
+main scene is a title card, and the only engine code is the seeded RNG
+everything else will draw from. Iteration 1 (map data, validator, the
+Classic board) is next — see [ROADMAP.md](ROADMAP.md).
 
-That is deliberate, and it has already paid for itself twice: the target
-changed from a web app to a Godot desktop game, and the scope changed
-from a fixed small game to a configurable engine. Both arrived while the
-repo held nothing but documents, so neither threw away working code.
+Before that, the repository held nothing but specifications for a while,
+deliberately, and it paid for itself twice: the target changed from a
+web app to a Godot desktop game, and the scope from a fixed small game
+to a configurable engine. Both arrived while there was no code to throw
+away.
 
 ## Reading order
 
@@ -49,14 +52,35 @@ repo held nothing but documents, so neither threw away working code.
 4. **Export templates** are only needed to build installers. Godot
    offers to fetch them the first time you export.
 
-## Running it, once Iteration 0 exists
+## Running it
 
 ```
-godot --path .                  # run the game
-godot --headless --import       # warm-up pass (see gotchas — do this first)
-godot --headless --script ...   # headless scripts and test runs
-./tools/gates.sh                # format, lint, test, export
+godot --path .        # run the game (or open the project and press F5)
+./tools/gates.sh      # all four gates: format, lint, test, export
 ```
+
+`tools/gates.sh` finds Godot through `GODOT_BIN`, falling back to `godot`
+on `PATH`:
+
+```
+export GODOT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64
+```
+
+Running the tests directly, if you want the raw output:
+
+```
+godot --path . --headless --import                       # warm-up, see gotchas
+godot --path . --headless -s -d --remote-debug tcp://127.0.0.1:0 \
+      res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a test --ignoreHeadlessMode -c
+```
+
+The runner exits 0 on success and 100 on failure, which is what makes the
+gate real. Reports land in `reports/` (gitignored) as JUnit XML and HTML.
+
+**The export gate is skipped** when export templates aren't installed, so
+working on `core/` doesn't force a 1 GB download. CI sets
+`MALPACO_REQUIRE_EXPORT=1` to make it mandatory there. To install them
+locally: Godot → Editor → Manage Export Templates.
 
 ## Verified environment facts
 
@@ -81,7 +105,17 @@ Checked directly on a Linux container on 2026-09-17, not assumed:
 - **gdtoolkit lags the engine.** The linter is 4.5.0 against a 4.7.2
   engine, so it may flag valid 4.7 syntax. If a gate fails on something
   that is plainly correct, suspect the linter before the code — and pin
-  or disable the specific rule rather than contorting the source.
+  or disable the specific rule rather than contorting the source. So far
+  it has been clean; the only rule that has bitten is a 100-character
+  line limit.
+- **Typing is enforced by the engine, not by review.**
+  `project.godot` sets `untyped_declaration`, `unsafe_property_access`
+  and `unsafe_method_access` to *error*, with `exclude_addons=true` so
+  the vendored gdUnit4 is not held to it. Untyped code fails to parse,
+  which is the point.
+- **gdUnit4 detects that it is under test** and skips activating its own
+  editor plugin during a headless run. The "GdUnit4 plugin will not be
+  executed" line in the output is expected, not a problem.
 - **Audio fails on headless machines.** ALSA errors and a fall back to
   the dummy driver are expected and harmless in CI; it does mean sound
   cannot be evaluated anywhere but a real desktop.
