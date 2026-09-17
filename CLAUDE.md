@@ -7,9 +7,11 @@ direction constraint, [RULES.md](RULES.md) for the game specification,
 the `RuleSet` surface and the engine's contract,
 [SCENARIOS.md](SCENARIOS.md) for scenarios, map generation, victory
 conditions and presets, [ROADMAP.md](ROADMAP.md) for the iteration plan
-and current status, and [DECISIONS.md](DECISIONS.md) for a scannable log
-of *why* things work the way they do — product and design decisions,
-separate from this file's workflow rules.
+and current status, [ONBOARDING.md](ONBOARDING.md) for setting up a
+machine, running it, and the gotchas that cost someone an evening, and
+[DECISIONS.md](DECISIONS.md) for a scannable log of *why* things work
+the way they do — product and design decisions, separate from this
+file's workflow rules.
 
 ## Workflow
 
@@ -32,6 +34,10 @@ separate from this file's workflow rules.
   and RULES.md disagree, one of them is a bug — decide which, in writing,
   before changing either. Same for SCENARIOS.md whenever the generator
   gains a parameter, a victory condition is added, or the schema changes.
+- Keep ONBOARDING.md current too: if a change adds a gotcha, moves
+  where something important lives, or changes how the project is set up
+  or run, reflect it there — it goes stale the same way the other docs
+  would if left alone.
 - Keep **ASSETS.md** current from the first asset: source, author,
   licence, and a link, for every image, font, shader and sound. A
   licence that can't be reconstructed later is an art rewrite, and the
