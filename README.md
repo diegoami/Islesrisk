@@ -51,6 +51,8 @@ cheap to try.
 - [DECISIONS.md](DECISIONS.md) — the *why* behind product and design
   choices, including the case against building this at all
 - [ROADMAP.md](ROADMAP.md) — iteration plan and current status
+- [ONBOARDING.md](ONBOARDING.md) — picking the project up on a new
+  machine or in a new session: setup, how to run it, and the gotchas
 - [CLAUDE.md](CLAUDE.md) — working notes and repo conventions
 
 ## Stack (planned)
