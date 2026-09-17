@@ -1,4 +1,4 @@
-# Islesrisk — Roadmap
+# Malpaco — Roadmap
 
 Self-contained iterations toward a beautiful desktop conquest game built
 on the engine described in [ARCHITECTURE.md](ARCHITECTURE.md). Each
@@ -22,9 +22,9 @@ can resume cleanly from any point. Check items off as they land; update
   RULES.md and SCENARIOS.md carried over nearly unchanged.
 - **Decision point**: Iteration 5 produces the vertical slice, and the
   commercial question (portfolio vs Steam) is answered there.
-- **Open before release**: a final name (DECISIONS.md, "Name, art and IP
-  posture"). "Islesrisk" is provisional and more urgent now that a
-  commercial release is possible.
+- **Named (2026-09-17)**: **Malpaco** — Esperanto for "un-peace"
+  (DECISIONS.md, "Name, art and IP posture"). The working title
+  "Islesrisk" is retired; the repository is renamed to match.
 
 ## Ordering principle
 
@@ -215,7 +215,7 @@ The spike proved the register on one board; this builds it as a system.
 
 ## Iteration 11 — Release
 
-- [ ] Final name decided, applied, DECISIONS.md amended
+- [ ] Store/release naming consistent with **Malpaco** everywhere
 - [ ] ASSETS.md complete: provenance and licence for every asset and font
 - [ ] Windows/Linux/macOS builds on a public releases page; `CHANGELOG.md`;
       `v0.1.0` tagged

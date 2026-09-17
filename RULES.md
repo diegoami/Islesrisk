@@ -1,4 +1,4 @@
-# Islesrisk — Game specification
+# Malpaco — Game specification
 
 The authoritative description of how a game plays, and the contract
 `core/rules` must satisfy. Written to be read by a person and testable

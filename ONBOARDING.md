@@ -1,4 +1,4 @@
-# Islesrisk — onboarding
+# Malpaco — onboarding
 
 How to pick this project up on a new machine or in a new session,
 written for whoever arrives next: a human, or Claude in a fresh session
@@ -42,8 +42,8 @@ repo held nothing but documents, so neither threw away working code.
    `pip install "gdtoolkit==4.*"` — provides `gdformat` and `gdlint`.
 3. **Clone and enable the hook**:
    ```
-   git clone https://github.com/diegoami/Islesrisk.git
-   cd Islesrisk
+   git clone https://github.com/diegoami/Malpaco.git
+   cd Malpaco
    git config core.hooksPath .githooks   # once per clone, from Iteration 0 on
    ```
 4. **Export templates** are only needed to build installers. Godot
@@ -114,10 +114,8 @@ agree with it.
 
 ## What the product owner still owes a decision on
 
-- **The name.** "Islesrisk" is provisional and reads as a Risk
-  derivative, which is the comparison the project is trying not to
-  invite. Needed before release (DECISIONS.md, "Name, art and IP
-  posture").
+- ~~The name.~~ **Settled 2026-09-17: Malpaco.** See DECISIONS.md,
+  "Name, art and IP posture".
 - **Portfolio or commercial.** Answered at the vertical slice, Iteration
   5. Until then the project is built *as if* commercial, which in
   practice means only: track asset provenance in ASSETS.md from the

@@ -1,4 +1,4 @@
-# Islesrisk — Scenarios, maps and victory conditions
+# Malpaco — Scenarios, maps and victory conditions
 
 How a game is *configured*: where the board comes from, what the players
 are trying to do, and how a set-up is saved, shared and replayed. The

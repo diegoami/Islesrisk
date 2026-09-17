@@ -1,6 +1,6 @@
-# Islesrisk — Architecture
+# Malpaco — Architecture
 
-Islesrisk is a turn-based conquest **engine** with a game on top of it,
+Malpaco is a turn-based conquest **engine** with a game on top of it,
 built in **Godot 4** for the desktop, and meant to be beautiful. The
 rules descend from Soleau Software's *Isle Wars* (1994) — see
 [RULES.md](RULES.md) for the specification and [DECISIONS.md](DECISIONS.md)

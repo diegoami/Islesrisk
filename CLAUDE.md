@@ -1,4 +1,4 @@
-# Islesrisk — working notes for Claude
+# Malpaco — working notes for Claude
 
 Turn-based island-conquest game for the desktop, built in Godot 4 on a
 configurable engine, and meant to be beautiful. See

@@ -1,9 +1,17 @@
-# Islesrisk
+# Malpaco
+
+*Esperanto: **mal-PAH-tso**, "un-peace" — `paco` is peace, `mal-`
+reverses it.*
 
 A turn-based island-conquest game for the desktop, built in Godot 4:
 take an archipelago, hold it, and try not to lose it to a storm. A
 modern re-take on the ruleset of Soleau Software's *Isle Wars* (1994) —
 **not** a port and not a clone of it.
+
+The name is the design. Nothing you hold stays held: the floods and the
+revolts fall on whoever is winning, the production centres wander off,
+and an attack is a commitment you cannot take back. The board never
+settles.
 
 Underneath it is a **configurable engine**: boards generated or
 hand-drawn at any size, rules as a data object, two to eight players,

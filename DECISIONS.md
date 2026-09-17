@@ -1,4 +1,4 @@
-# Islesrisk — Decisions
+# Malpaco — Decisions
 
 A scannable log of *why* the project works the way it does — decisions
 made along the way, with the reasoning, not the implementation detail.
@@ -336,11 +336,33 @@ and 2.5D).
   continued selling the registered version (about $12 by download, per
   the classic-games catalogues). Mechanics are not copyrightable, so the
   ruleset is fair game; the name, map and assets are not.
-- **Working title "Islesrisk", from the repo name — treat it as
-  provisional.** It reads as a Risk derivative, which is precisely the
-  comparison the project is trying not to invite, and "Risk" is
-  Hasbro's. A final name should be picked before any public deploy
-  (Iteration 11) and this entry amended with it.
+- **The name is "Malpaco"** (product owner's choice, 2026-09-17).
+  Esperanto for "un-peace" — `paco` is peace, `mal-` is the prefix that
+  reverses a word, and it is the most recognisably Esperanto thing that
+  could sit on a store page. Stress falls on the penultimate syllable
+  and `c` is /ts/, so: *mal-PAH-tso*. Checked clear on Steam and itch.
+- **Why it beat the alternatives.** It names the *feeling* rather than
+  describing the board — the state this game leaves you in, never
+  settled, never consolidated, which is what the hazards and the roaming
+  centres are for. The earlier candidates split into naming the setting
+  (Insularo, "archipelago") or the thesis in English (Saltcrown);
+  Malpaco does the second in a language that owes nothing to the genre's
+  vocabulary.
+- **"Eterna Malpaco" was considered and the first word dropped.**
+  *Eternal* is grand-strategy vocabulary — it promises a forty-hour
+  campaign to anyone reading a store page, which is the exact
+  expectation Classic's five-minute target is built to avoid. There is a
+  real reading where "eternal un-peace" means *the board never settles*,
+  and that reading is the design exactly; it just isn't the one a
+  stranger gets in two seconds. "Eterna" is also the crowded half in
+  search. Recorded here so the idea isn't re-proposed without the
+  counter-argument attached.
+- **"Islesrisk" is retired.** It named the comparison the project spends
+  its whole design avoiding, and "Risk" is Hasbro's.
+- **Still open**: a fluent Esperantist should sanity-check the name
+  before it goes on a store page. The grammar is not in doubt; how it
+  *reads* to someone who speaks the language is worth an hour of
+  someone's time.
 - **A courtesy email to Soleau is cheap and clears it properly.** They
   have historically been relaxed about their catalogue being
   redistributed. Optional, since nothing here requires permission, but
