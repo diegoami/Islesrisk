@@ -37,10 +37,11 @@ away.
 
 ## Setting up a desktop
 
-1. **Godot 4.7.2**, standard build (**not** .NET) —
-   <https://godotengine.org/download>. It is a single portable
-   executable; unzip and run. Use .NET only if the Iteration 2 language
-   revisit (ARCHITECTURE.md) has switched the project to C#.
+1. **Godot 4.7.2** — <https://godotengine.org/download>. The standard
+   build is the one to pick; the .NET build also runs this project
+   perfectly well, because nothing here is C# (verified on Windows,
+   2026-09-18). Either way it is a single portable executable: unzip and
+   run. Unzipping does **not** put it on `PATH` — see "Running it".
 2. **gdtoolkit** for the lint and format gates:
    `pip install "gdtoolkit==4.*"` — provides `gdformat` and `gdlint`.
 3. **Clone and enable the hook**:
@@ -59,11 +60,22 @@ godot --path .        # run the game (or open the project and press F5)
 ./tools/gates.sh      # all five gates: format, lint, test, smoke, export
 ```
 
-`tools/gates.sh` finds Godot through `GODOT_BIN`, falling back to `godot`
-on `PATH`:
+Neither works until Godot is findable. `tools/gates.sh` looks for
+`GODOT_BIN` first and falls back to `godot` on `PATH`, so setting that
+one variable fixes both:
 
 ```
 export GODOT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64
+```
+
+On **Windows**, set it once per user and reach it from PowerShell or Git
+Bash alike — and point it at the `_console.exe`, for the reason in the
+gotchas:
+
+```powershell
+[Environment]::SetEnvironmentVariable('GODOT_BIN',
+  'C:\Program Files\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe',
+  'User')   # new terminals pick it up; the current one does not
 ```
 
 Running the tests directly, if you want the raw output:
@@ -102,6 +114,12 @@ Checked directly on a Linux container on 2026-09-17, not assumed:
   declared in the current scope* until `godot --headless --import` has
   run once. CI must do the warm-up import before the test step, and so
   must you after a fresh clone.
+- **On Windows, use the `_console.exe`.** A Godot zip ships two
+  executables. The plain one detaches from the terminal, so you get no
+  `print`, no script errors and no gate output — the command looks like
+  it did nothing. The `_console.exe` beside it keeps stdout attached and
+  is what `GODOT_BIN` should point at. The windowed one is only worth
+  double-clicking.
 - **gdtoolkit lags the engine.** The linter is 4.5.0 against a 4.7.2
   engine, so it may flag valid 4.7 syntax. If a gate fails on something
   that is plainly correct, suspect the linter before the code — and pin
