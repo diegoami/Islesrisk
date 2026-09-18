@@ -8,14 +8,13 @@ can resume cleanly from any point. Check items off as they land; update
 
 ## Status
 
-- **Done**: Iterations 0-2 — the Godot project and five quality gates,
-  the map types and validator with the `small-sea` board, and the rules
-  engine: `RuleSet`, `GameState`, the match rule, the failure penalty,
-  hazards and production centres. 79 tests green, including 100 full
-  games played headless.
-- **Next up**: Iteration 3 — hot-seat, playable. The first iteration
-  where the board can be clicked, and the one that answers whether
-  chasing the centres is fun.
+- **Done**: Iterations 0-3 — the Godot project and five quality gates,
+  the map and validator, the rules engine, and a playable hot-seat game
+  with save and resume. 88 tests green, including 100 full games a run.
+- **Waiting on the product owner**: play a game and say whether chasing
+  the production centres is fun. Iteration 3 exists to ask that question
+  and everything after it assumes the answer is yes.
+- **Next up**: Iteration 4 — the opponent, and the project's go/no-go.
 - **Note on the specs-first start**: the repository held nothing but
   documents for its first four commits, and two pivots arrived in that
   window — web to Godot, and fixed game to configurable engine. Neither
@@ -138,20 +137,28 @@ the corrected state.
   preset can already switch them off, but no card is drawn or played
   until Iteration 9.
 
-## Iteration 3 — Hot-seat, playable
+## Iteration 3 — Hot-seat, playable — **DONE (2026-09-18)**
 
-- [ ] Click an province to select, click an adjacent enemy province to attack;
-      illegal targets are not offered, and the reason is visible
-- [ ] Phase bar, reinforcement placement, redeploy, end turn; an empty
-      phase is skipped, not shown empty
-- [ ] Hazards and centre moves shown as they happen, even as programmer
-      art — a rubber band the player can't perceive reads as the game
+- [x] Click a province to select, click a red-ringed neighbour to attack.
+      Illegal targets are never offered, and when one is clicked anyway the
+      engine's own reason is shown
+- [x] Phase bar, reinforcement placement, redeploy, end turn, concede
+- [x] Hazards and centre moves flash on the province they hit and are named
+      in the event log — a rubber band nobody can perceive reads as the game
       being arbitrary
-- [ ] Start screen: preset and opponent count. No toggles
-- [ ] Save, resume, result screen with the seed
-- **Done when**: two humans can play a complete game — **and the product
-  owner can say whether chasing the centres is fun.** That verdict is
-  the point of this iteration; the rest is plumbing.
+- [x] Start screen: preset and player count, nothing else
+- [x] Result screen with the standings and the seed
+- [x] Save and resume: the save is the seed, the rule set and the list of
+      moves, and loading replays them
+- **Done when**: two humans can play a complete game on one device —
+  **they can** — and the product owner can say whether chasing the centres
+  is fun. **That verdict is still owed**, and it is the point of this
+  iteration; the rest is plumbing.
+- **All seats are human.** The AI is Iteration 4, so a four-player game is
+  four people taking turns at one keyboard.
+- **Programmer art.** Flat ownership colours, an owner's initial on every
+  province so colour is never the only cue, a gold dot for a production
+  centre. The look is Iteration 5.
 
 ## Iteration 4 — The opponent (go/no-go)
 

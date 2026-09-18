@@ -26,6 +26,13 @@ static func apply(state: GameState, action: Action) -> ActionResult:
 		return ActionResult.rejected("no player to act")
 
 	var next := state.clone()
+	var result := _dispatch(next, action)
+	if result.ok():
+		result.state.history.append(action)
+	return result
+
+
+static func _dispatch(next: GameState, action: Action) -> ActionResult:
 	match action.kind:
 		Action.Kind.PLACE:
 			return _place(next, action)

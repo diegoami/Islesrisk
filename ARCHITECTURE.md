@@ -225,10 +225,17 @@ validation loads nothing and says why.
 
 ## Storage
 
-Local, no accounts, no backend. `user://` holds the in-progress game, a
-short results history, and saved or imported scenarios. A save carries
-its resolved rule set and its seed, so it is simultaneously a replay and
-a reproducible bug report.
+Local, no accounts, no backend. `user://` holds the in-progress game, and
+later the results history and any imported scenarios.
+
+**A save is what happened, not where things ended up**: the seed, the
+resolved rule set, the players and the list of actions. Loading replays
+them through the engine, which reproduces the game exactly because the
+engine is deterministic over precisely those inputs. The file is small,
+it is also a bug report, and it cannot describe a position the rules
+could not have produced. If a replay is ever refused, the save and the
+build disagree about the rules — which is worth being told, rather than
+resuming a game that has quietly become a different one.
 
 ## Platforms
 

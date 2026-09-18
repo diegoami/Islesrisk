@@ -138,3 +138,174 @@ var victory: Array[String] = ["conquest"]
 
 static func classic() -> RuleSet:
 	return RuleSet.new()
+
+
+## Serialisation. A save stores its rule set **inline and resolved**, so a
+## tuning change to Classic can never silently alter a game already in
+## progress (DECISIONS.md). Unknown keys are ignored on read rather than
+## rejected — a rule set from an older build should still load, with this
+## build's defaults filling the gaps.
+func to_dict() -> Dictionary:
+	return {
+		"id": id,
+		"name": name,
+		"version": version,
+		"setup":
+		{
+			"deal": setup.deal,
+			"startingArmies": setup.starting_armies,
+			"distributionPool": setup.distribution_pool,
+			"shortStackBonus": setup.short_stack_bonus,
+		},
+		"reinforcement":
+		{
+			"perProvinceDivisor": reinforcement.per_province_divisor,
+			"minimum": reinforcement.minimum,
+			"islandBonus": reinforcement.island_bonus,
+			"centreBonus": reinforcement.centre_bonus,
+		},
+		"combat":
+		{
+			"attackRule": combat.attack_rule,
+			"attackRatio": combat.attack_ratio,
+			"minArmiesToAttack": combat.min_armies_to_attack,
+			"attackerDice":
+			{"max": combat.attacker_dice.max_dice, "minus": combat.attacker_dice.minus},
+			"defenderDice":
+			{"max": combat.defender_dice.max_dice, "minus": combat.defender_dice.minus},
+			"ties": combat.ties,
+			"failurePenalty": combat.failure_penalty,
+			"capture": combat.capture,
+		},
+		"redeploy": {"movesPerTurn": redeploy.moves_per_turn, "chain": redeploy.chain},
+		"hazards":
+		{
+			"enabled": hazards.enabled,
+			"flood": _hazard_to_dict(hazards.flood),
+			"quake": _hazard_to_dict(hazards.quake),
+			"revolt": _hazard_to_dict(hazards.revolt),
+		},
+		"centres":
+		{
+			"count": centres.count,
+			"bonus": centres.bonus,
+			"wanderChance": centres.wander_chance,
+		},
+		"cards":
+		{
+			"enabled": cards.enabled,
+			"bombard": cards.bombard,
+			"shield": cards.shield,
+			"airlift": cards.airlift,
+			"drawOn": cards.draw_on,
+			"handMax": cards.hand_max,
+			"perTurn": cards.per_turn,
+		},
+		"surrender":
+		{
+			"offer": surrender.offer,
+			"provinceShare": surrender.province_share,
+			"armyShare": surrender.army_share,
+		},
+		"victory": Array(victory),
+	}
+
+
+static func from_dict(raw: Dictionary) -> RuleSet:
+	var rules := RuleSet.new()
+	rules.id = str(raw.get("id", rules.id))
+	rules.name = str(raw.get("name", rules.name))
+	rules.version = int(raw.get("version", rules.version))
+
+	var s: Dictionary = raw.get("setup", {})
+	rules.setup.deal = str(s.get("deal", rules.setup.deal))
+	rules.setup.starting_armies = int(s.get("startingArmies", rules.setup.starting_armies))
+	rules.setup.distribution_pool = int(s.get("distributionPool", rules.setup.distribution_pool))
+	rules.setup.short_stack_bonus = int(s.get("shortStackBonus", rules.setup.short_stack_bonus))
+
+	var r: Dictionary = raw.get("reinforcement", {})
+	rules.reinforcement.per_province_divisor = int(
+		r.get("perProvinceDivisor", rules.reinforcement.per_province_divisor)
+	)
+	rules.reinforcement.minimum = int(r.get("minimum", rules.reinforcement.minimum))
+	rules.reinforcement.island_bonus = str(r.get("islandBonus", rules.reinforcement.island_bonus))
+	rules.reinforcement.centre_bonus = int(r.get("centreBonus", rules.reinforcement.centre_bonus))
+
+	var c: Dictionary = raw.get("combat", {})
+	rules.combat.attack_rule = str(c.get("attackRule", rules.combat.attack_rule))
+	rules.combat.attack_ratio = float(c.get("attackRatio", rules.combat.attack_ratio))
+	rules.combat.min_armies_to_attack = int(
+		c.get("minArmiesToAttack", rules.combat.min_armies_to_attack)
+	)
+	rules.combat.attacker_dice = _dice_from(c.get("attackerDice", {}), rules.combat.attacker_dice)
+	rules.combat.defender_dice = _dice_from(c.get("defenderDice", {}), rules.combat.defender_dice)
+	rules.combat.ties = str(c.get("ties", rules.combat.ties))
+	rules.combat.failure_penalty = str(c.get("failurePenalty", rules.combat.failure_penalty))
+	rules.combat.capture = str(c.get("capture", rules.combat.capture))
+
+	var d: Dictionary = raw.get("redeploy", {})
+	rules.redeploy.moves_per_turn = int(d.get("movesPerTurn", rules.redeploy.moves_per_turn))
+	rules.redeploy.chain = bool(d.get("chain", rules.redeploy.chain))
+
+	var h: Dictionary = raw.get("hazards", {})
+	rules.hazards.enabled = bool(h.get("enabled", rules.hazards.enabled))
+	rules.hazards.flood = _hazard_from(h.get("flood", {}), rules.hazards.flood)
+	rules.hazards.quake = _hazard_from(h.get("quake", {}), rules.hazards.quake)
+	rules.hazards.revolt = _hazard_from(h.get("revolt", {}), rules.hazards.revolt)
+
+	var m: Dictionary = raw.get("centres", {})
+	rules.centres.count = int(m.get("count", rules.centres.count))
+	rules.centres.bonus = int(m.get("bonus", rules.centres.bonus))
+	rules.centres.wander_chance = float(m.get("wanderChance", rules.centres.wander_chance))
+
+	var k: Dictionary = raw.get("cards", {})
+	rules.cards.enabled = bool(k.get("enabled", rules.cards.enabled))
+	rules.cards.bombard = int(k.get("bombard", rules.cards.bombard))
+	rules.cards.shield = int(k.get("shield", rules.cards.shield))
+	rules.cards.airlift = int(k.get("airlift", rules.cards.airlift))
+	rules.cards.draw_on = str(k.get("drawOn", rules.cards.draw_on))
+	rules.cards.hand_max = int(k.get("handMax", rules.cards.hand_max))
+	rules.cards.per_turn = int(k.get("perTurn", rules.cards.per_turn))
+
+	var u: Dictionary = raw.get("surrender", {})
+	rules.surrender.offer = bool(u.get("offer", rules.surrender.offer))
+	rules.surrender.province_share = float(u.get("provinceShare", rules.surrender.province_share))
+	rules.surrender.army_share = float(u.get("armyShare", rules.surrender.army_share))
+
+	var wins: Array = raw.get("victory", [])
+	if not wins.is_empty():
+		var listed: Array[String] = []
+		for entry: Variant in wins:
+			listed.append(str(entry))
+		rules.victory = listed
+	return rules
+
+
+func _hazard_to_dict(hazard: Hazard) -> Dictionary:
+	return {
+		"chance": hazard.chance,
+		"lose": hazard.lose,
+		"minArmies": hazard.min_armies,
+		"target": hazard.target,
+	}
+
+
+static func _hazard_from(raw: Variant, fallback: Hazard) -> Hazard:
+	if not raw is Dictionary:
+		return fallback
+	var entry: Dictionary = raw
+	return Hazard.new(
+		float(entry.get("chance", fallback.chance)),
+		str(entry.get("lose", fallback.lose)),
+		int(entry.get("minArmies", fallback.min_armies)),
+		str(entry.get("target", fallback.target))
+	)
+
+
+static func _dice_from(raw: Variant, fallback: Dice) -> Dice:
+	if not raw is Dictionary:
+		return fallback
+	var entry: Dictionary = raw
+	return Dice.new(
+		int(entry.get("max", fallback.max_dice)), int(entry.get("minus", fallback.minus))
+	)

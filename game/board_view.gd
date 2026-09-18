@@ -1,137 +1,217 @@
 class_name BoardView
 extends Node2D
-## Draws whatever map it is given, at whatever size.
+## The board: draws a game state and turns clicks into province ids.
 ##
-## Iteration 1: flat colour, deliberately. The look — water, coastlines,
-## weather — is Iteration 5, and an art idea that only works on a hand-placed
-## board is not usable anyway (ARCHITECTURE.md, "Looking good"), so this stage
-## only has to prove the renderer is indifferent to what the generator will
-## later invent.
-##
-## The two kinds of crossing are drawn differently because they read
-## differently to a player: a border is a line on land, a sea lane is a
-## crossing of open water.
+## Everything is drawn in one `_draw()` rather than built as nodes, so a
+## repaint after every action is one call and selection, hover and hazard
+## flashes cost nothing to add. Flat colour on purpose — the look is
+## Iteration 5, and an art idea that only works on a hand-placed board is not
+## usable anyway (ARCHITECTURE.md, "Looking good").
+
+signal province_clicked(province_id: String)
 
 const SEA := Color("#1b4a63")
 const COAST := Color("#2b241a")
-const BORDER := Color("#8d7f66")
+const BORDER := Color("#6f6455")
 const LANE := Color("#4a8099")
-const LABEL := Color("#3a2f22")
-
-## Muted land tints, one per island. Temporary: ownership colour replaces this
-## in Iteration 3. Distinct enough to check the grouping by eye, which is the
-## only reason they exist.
-const ISLAND_TINTS: Array[Color] = [
-	Color("#d9c9a3"),
-	Color("#b5c4a1"),
-	Color("#d6b39b"),
-	Color("#a9bcc4"),
-]
+const SELECTED := Color("#f4e4bc")
+const TARGET := Color("#e2705a")
+const CENTRE := Color("#f0c674")
+const TEXT := Color("#1c1710")
+const TEXT_LIGHT := Color("#f6efe0")
 
 const COAST_WIDTH := 4.0
 const BORDER_WIDTH := 1.6
 const LANE_WIDTH := 2.2
-const VIEW_MARGIN := 1.06
-## How close two polygon points must be to count as the same corner. Clipped
-## cells meet exactly in theory, within rounding in practice.
 const EDGE_TOLERANCE := 2.0
+const VIEW_MARGIN := 1.08
+const LABEL_SIZE := 20
+const FLASH_SECONDS := 1.2
 
-var _map: GameMap
-var _tint_by_island: Dictionary = {}
+var _state: GameState
+var _selected := ""
+var _targets := PackedStringArray()
+var _hovered := ""
+## province id -> {colour, remaining}. Hazards must be *seen*: a rubber band
+## the player cannot perceive reads as the game being arbitrary.
+var _flashes: Dictionary = {}
+var _coast_cache: Array[PackedVector2Array] = []
+var _camera: Camera2D
 
 
-func show_map(map: GameMap) -> void:
-	_map = map
-	for child: Node in get_children():
-		child.queue_free()
-	_tint_by_island.clear()
-	for index: int in map.islands.size():
-		_tint_by_island[map.islands[index].id] = ISLAND_TINTS[index % ISLAND_TINTS.size()]
+func _ready() -> void:
+	_camera = Camera2D.new()
+	_camera.enabled = true
+	add_child(_camera)
+	set_process(true)
 
-	_draw_sea()
+
+func show_state(state: GameState) -> void:
+	var first := _state == null or _state.map != state.map
+	_state = state
+	if first:
+		_rebuild_coastlines()
+		_frame_camera()
+	queue_redraw()
+
+
+func set_selection(province_id: String, targets: PackedStringArray) -> void:
+	_selected = province_id
+	_targets = targets
+	queue_redraw()
+
+
+func flash(province_id: String, colour: Color) -> void:
+	_flashes[province_id] = {"colour": colour, "remaining": FLASH_SECONDS}
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	if _flashes.is_empty():
+		return
+	for province_id: String in _flashes.keys():
+		var entry: Dictionary = _flashes[province_id]
+		entry["remaining"] = float(entry["remaining"]) - delta
+		if float(entry["remaining"]) <= 0.0:
+			_flashes.erase(province_id)
+	queue_redraw()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _state == null:
+		return
+	if event is InputEventMouseMotion:
+		var under := _province_at(get_local_mouse_position())
+		if under != _hovered:
+			_hovered = under
+			queue_redraw()
+		return
+	if event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		if button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+			var hit := _province_at(get_local_mouse_position())
+			if not hit.is_empty():
+				province_clicked.emit(hit)
+				get_viewport().set_input_as_handled()
+
+
+func _province_at(point: Vector2) -> String:
+	for province: Province in _state.map.provinces:
+		if Geometry2D.is_point_in_polygon(point, province.polygon):
+			return province.id
+	return ""
+
+
+func _draw() -> void:
+	if _state == null:
+		return
+	var bounds := _state.map.bounds
+	draw_rect(bounds, SEA, true)
 	_draw_sea_lanes()
-	for island: Island in map.islands:
-		_draw_island(island)
-	for province: Province in map.provinces:
-		_draw_label(province)
-	_frame_camera()
+
+	for province: Province in _state.map.provinces:
+		draw_colored_polygon(province.polygon, _fill_for(province))
+	for province: Province in _state.map.provinces:
+		draw_polyline(_closed(province.polygon), BORDER, BORDER_WIDTH, true)
+	for segment: PackedVector2Array in _coast_cache:
+		draw_polyline(segment, COAST, COAST_WIDTH, true)
+
+	for province: Province in _state.map.provinces:
+		_draw_marks(province)
 
 
-func _draw_sea() -> void:
-	var sea := Polygon2D.new()
-	sea.polygon = PackedVector2Array(
-		[
-			_map.bounds.position,
-			_map.bounds.position + Vector2(_map.bounds.size.x, 0.0),
-			_map.bounds.end,
-			_map.bounds.position + Vector2(0.0, _map.bounds.size.y),
-		]
+func _fill_for(province: Province) -> Color:
+	var base := PlayerPalette.for_player(_state, _state.owner(province.id))
+	if _flashes.has(province.id):
+		var entry: Dictionary = _flashes[province.id]
+		var strength: float = clampf(float(entry["remaining"]) / FLASH_SECONDS, 0.0, 1.0)
+		base = base.lerp(entry["colour"] as Color, strength * 0.85)
+	if province.id == _hovered:
+		base = base.lightened(0.12)
+	return base
+
+
+func _draw_marks(province: Province) -> void:
+	var centre := province.label_at
+
+	if province.id == _selected:
+		draw_polyline(_closed(province.polygon), SELECTED, 5.0, true)
+	elif _targets.has(province.id):
+		draw_polyline(_closed(province.polygon), TARGET, 4.0, true)
+
+	# A production centre: the thing worth chasing, so it is drawn as a mark on
+	# the land rather than hidden in a tooltip.
+	if _state.centres.has(province.id):
+		draw_circle(centre + Vector2(0, -26), 9.0, CENTRE)
+		draw_arc(centre + Vector2(0, -26), 9.0, 0.0, TAU, 20, COAST, 2.0, true)
+
+	var font := ThemeDB.fallback_font
+	var owner_id := _state.owner(province.id)
+	var label := "%s %d" % [PlayerPalette.initial(owner_id), _state.army_count(province.id)]
+	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_SIZE).x
+	draw_string(
+		font,
+		centre - Vector2(width * 0.5, -6.0),
+		label,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		LABEL_SIZE,
+		TEXT if _fill_for(province).get_luminance() > 0.45 else TEXT_LIGHT
 	)
-	sea.color = SEA
-	add_child(sea)
+
+	var name_size := font.get_string_size(province.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+	draw_string(
+		font,
+		centre - Vector2(name_size * 0.5, -24.0),
+		province.name,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		13,
+		Color(TEXT_LIGHT, 0.75)
+	)
 
 
-## Provinces filled and outlined thinly, then the island's silhouette drawn
-## over the top — so internal borders read as lines on land and the coast reads
-## as where the land stops.
-func _draw_island(island: Island) -> void:
-	var tint: Color = _tint_by_island.get(island.id, ISLAND_TINTS[0])
-	var members := _map.provinces_of(island.id)
-	for province: Province in members:
-		var fill := Polygon2D.new()
-		fill.polygon = province.polygon
-		fill.color = tint
-		add_child(fill)
-	for province: Province in members:
-		var edge := Line2D.new()
-		edge.points = province.polygon
-		edge.closed = true
-		edge.width = BORDER_WIDTH
-		edge.default_color = BORDER
-		edge.antialiased = true
-		add_child(edge)
-	for segment: PackedVector2Array in _coast_edges(members):
-		var coast := Line2D.new()
-		coast.points = segment
-		coast.width = COAST_WIDTH
-		coast.default_color = COAST
-		coast.antialiased = true
-		coast.begin_cap_mode = Line2D.LINE_CAP_ROUND
-		coast.end_cap_mode = Line2D.LINE_CAP_ROUND
-		add_child(coast)
+## Coast to coast, not centre to centre: a lane between centroids runs over
+## whatever land is in the way.
+func _draw_sea_lanes() -> void:
+	for province: Province in _state.map.provinces:
+		for other_id: String in province.sea_lanes:
+			if province.id >= other_id:
+				continue
+			var other := _state.map.province(other_id)
+			if other == null:
+				continue
+			var crossing := _shortest_crossing(province.polygon, other.polygon)
+			draw_line(crossing[0], crossing[1], LANE, LANE_WIDTH, true)
 
 
-## An island's coastline: every province edge that no other province on the
-## same island shares.
-##
-## This started as a boolean union of the province polygons, which was wrong
-## twice over — neighbouring cells meet within float rounding rather than
-## exactly, so the merge silently returned two polygons and drew a coastline
-## straight through the middle of an island. Comparing edges is exact, cheap,
-## and cannot invent a stroke that is not on the shore.
-func _coast_edges(members: Array[Province]) -> Array[PackedVector2Array]:
-	var found: Array[PackedVector2Array] = []
-	for province: Province in members:
-		var count := province.polygon.size()
-		for i: int in count:
-			var from := province.polygon[i]
-			var to := province.polygon[(i + 1) % count]
-			if not _edge_is_shared(members, province, from, to):
-				found.append(PackedVector2Array([from, to]))
-	return found
+## An island's coastline is every province edge no neighbour on the same island
+## shares. Comparing edges is exact; a boolean union of the polygons is not,
+## and drew a coastline through the middle of an island when it was tried.
+func _rebuild_coastlines() -> void:
+	_coast_cache = []
+	for island: Island in _state.map.islands:
+		var members := _state.map.provinces_of(island.id)
+		for province: Province in members:
+			var count := province.polygon.size()
+			for i: int in count:
+				var from := province.polygon[i]
+				var to := province.polygon[(i + 1) % count]
+				if not _edge_is_shared(members, province, from, to):
+					_coast_cache.append(PackedVector2Array([from, to]))
 
 
-func _edge_is_shared(members: Array[Province], owner: Province, from: Vector2, to: Vector2) -> bool:
+func _edge_is_shared(
+	members: Array[Province], owner_province: Province, from: Vector2, to: Vector2
+) -> bool:
 	for other: Province in members:
-		if other.id == owner.id:
+		if other.id == owner_province.id:
 			continue
 		var count := other.polygon.size()
 		for i: int in count:
 			var a := other.polygon[i]
 			var b := other.polygon[(i + 1) % count]
-			var same := _near(from, a) and _near(to, b)
-			var reversed := _near(from, b) and _near(to, a)
-			if same or reversed:
+			if (_near(from, a) and _near(to, b)) or (_near(from, b) and _near(to, a)):
 				return true
 	return false
 
@@ -140,25 +220,6 @@ func _near(a: Vector2, b: Vector2) -> bool:
 	return a.distance_squared_to(b) <= EDGE_TOLERANCE * EDGE_TOLERANCE
 
 
-func _draw_sea_lanes() -> void:
-	for province: Province in _map.provinces:
-		for other_id: String in province.sea_lanes:
-			if province.id >= other_id:
-				continue
-			var other := _map.province(other_id)
-			if other == null:
-				continue
-			var lane := Line2D.new()
-			lane.points = _shortest_crossing(province.polygon, other.polygon)
-			lane.width = LANE_WIDTH
-			lane.default_color = LANE
-			lane.antialiased = true
-			add_child(lane)
-
-
-## Coast to coast, not centre to centre. A lane between centroids runs straight
-## over whatever land is in the way; the shortest hop between two shorelines
-## reads as what it is — a crossing of open water.
 func _shortest_crossing(a: PackedVector2Array, b: PackedVector2Array) -> PackedVector2Array:
 	var best_from := Vector2.ZERO
 	var best_to := Vector2.ZERO
@@ -173,27 +234,21 @@ func _shortest_crossing(a: PackedVector2Array, b: PackedVector2Array) -> PackedV
 	return PackedVector2Array([best_from, best_to])
 
 
-func _draw_label(province: Province) -> void:
-	var label := Label.new()
-	label.text = province.name
-	label.add_theme_color_override("font_color", LABEL)
-	label.position = province.label_at - Vector2(60.0, 10.0)
-	label.size = Vector2(120.0, 20.0)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(label)
+static func _closed(polygon: PackedVector2Array) -> PackedVector2Array:
+	var ring := PackedVector2Array(polygon)
+	if ring.size() > 0:
+		ring.append(ring[0])
+	return ring
 
 
 ## Fits the board's own coordinate space to the window, so a map of any size
 ## arrives framed and a resize reframes rather than reflows.
 func _frame_camera() -> void:
-	var camera := Camera2D.new()
-	camera.position = _map.bounds.get_center()
+	var bounds := _state.map.bounds
+	_camera.position = bounds.get_center()
 	var viewport := get_viewport_rect().size
-	if viewport.x > 0.0 and viewport.y > 0.0 and _map.bounds.size.x > 0.0:
-		var scale_to_fit := minf(
-			viewport.x / (_map.bounds.size.x * VIEW_MARGIN),
-			viewport.y / (_map.bounds.size.y * VIEW_MARGIN)
+	if viewport.x > 0.0 and viewport.y > 0.0 and bounds.size.x > 0.0:
+		var fit := minf(
+			viewport.x / (bounds.size.x * VIEW_MARGIN), viewport.y / (bounds.size.y * VIEW_MARGIN)
 		)
-		camera.zoom = Vector2(scale_to_fit, scale_to_fit)
-	camera.enabled = true
-	add_child(camera)
+		_camera.zoom = Vector2(fit, fit)

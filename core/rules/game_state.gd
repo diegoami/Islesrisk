@@ -37,6 +37,10 @@ var captured_this_turn: bool = false
 
 var rng: DeterministicRng
 var log: Array[Dictionary] = []
+## Every action that has been applied, in order. With the seed and the rule
+## set this *is* the game: a save file is these three things, and loading one
+## replays them. See game/game_archive.gd.
+var history: Array[Action] = []
 var winner: String = ""
 
 
@@ -135,5 +139,6 @@ func clone() -> GameState:
 	copy.captured_this_turn = captured_this_turn
 	copy.rng = DeterministicRng.from_snapshot(rng.snapshot())
 	copy.log = log.duplicate()
+	copy.history = history.duplicate()
 	copy.winner = winner
 	return copy
