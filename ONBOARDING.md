@@ -68,15 +68,32 @@ one variable fixes both:
 export GODOT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64
 ```
 
-On **Windows**, set it once per user and reach it from PowerShell or Git
-Bash alike — and point it at the `_console.exe`, for the reason in the
-gotchas:
+On **Windows**, set it once per user, pointing at the `_console.exe` for
+the reason in the gotchas:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('GODOT_BIN',
   'C:\Program Files\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe',
   'User')   # new terminals pick it up; the current one does not
 ```
+
+That fixes the gates, but not a bare `godot` — the executable is called
+`Godot_v4.7.2-stable_win64.exe`, so the command does not exist under that
+name whatever is on `PATH`. **Two** shims in a directory already on
+`PATH` fix it, and two are needed because PowerShell and Git Bash
+disagree about what counts as executable:
+
+```
+~/.local/bin/godot.cmd     @echo off
+                           "C:\...\Godot_..._console.exe" %*
+
+~/.local/bin/godot         #!/bin/sh
+                           exec "/c/.../Godot_..._console.exe" "$@"
+```
+
+Prefer a directory `PATH` already lists over editing `PATH` — on this
+machine `~/.local/bin` was there. `gdformat` and `gdlint` can be reached
+the same way if pip put them somewhere unlisted.
 
 Running the tests directly, if you want the raw output:
 
@@ -114,6 +131,13 @@ Checked directly on a Linux container on 2026-09-17, not assumed:
   declared in the current scope* until `godot --headless --import` has
   run once. CI must do the warm-up import before the test step, and so
   must you after a fresh clone.
+- **Git Bash does not resolve `.cmd`.** A `godot.cmd` shim works in
+  PowerShell and is invisible from Git Bash, which appends only `.exe`
+  and `.com` when it searches `PATH`. The symptom is `godot: command not
+  found` in one shell and a working `godot` in the other, from the same
+  directory. Hence the extensionless twin above. Worth knowing generally,
+  because the gates run under Bash and the editor is usually launched
+  from PowerShell.
 - **On Windows, use the `_console.exe`.** A Godot zip ships two
   executables. The plain one detaches from the terminal, so you get no
   `print`, no script errors and no gate output — the command looks like
