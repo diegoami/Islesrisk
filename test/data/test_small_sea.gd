@@ -5,10 +5,10 @@ extends GdUnitTestSuite
 ## whatever anyone edits in data/maps/, the gates notice.
 
 const EXPECTED := {
-	"north_reach": {"provinces": 4, "bonus": 3},
-	"the_spine": {"provinces": 4, "bonus": 3},
-	"warm_shoals": {"provinces": 3, "bonus": 2},
-	"the_teeth": {"provinces": 3, "bonus": 4},
+	"norda_vasto": {"provinces": 4, "bonus": 3},
+	"la_spino": {"provinces": 4, "bonus": 3},
+	"varmaj_sabloj": {"provinces": 3, "bonus": 2},
+	"la_dentoj": {"provinces": 3, "bonus": 4},
 }
 
 
@@ -50,9 +50,9 @@ func test_small_sea_matches_the_specification() -> void:
 
 ## The flavour text in RULES.md makes a claim about the board. If the map stops
 ## honouring it, one of the two is wrong and someone should decide which.
-func test_the_teeth_bleed_from_three_sea_entrances() -> void:
+func test_la_dentoj_bleeds_from_three_sea_entrances() -> void:
 	var map := MapRepository.load_map("small-sea").map
-	assert_int(_sea_entrances(map, "the_teeth")).is_equal(3)
+	assert_int(_sea_entrances(map, "la_dentoj")).is_equal(3)
 
 
 func test_every_island_is_reachable_by_sea() -> void:

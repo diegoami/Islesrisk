@@ -269,14 +269,30 @@ Classic's expense is a regression.
 
 ## The Classic board: `small-sea`
 
-Four islands, 14 provinces, tuned so no island is trivially defensible:
+Four islands, 14 provinces, tuned so no island is trivially defensible.
+**Malgranda Maro**, the Small Sea.
 
 | Island | Provinces | Bonus | Sea entrances | Note |
 |---|---|---|---|---|
-| North Reach | 4 | 3 | 2 | The largest; a long way round by land |
-| The Spine | 4 | 3 | 2 | Narrow, easily cut in half |
-| Warm Shoals | 3 | 2 | 3 | Small and cheap — the natural first target |
-| The Teeth | 3 | 4 | 3 | Worth more because it bleeds from three sides |
+| Norda Vasto | 4 | 3 | 2 | The largest; a long way round by land |
+| La Spino | 4 | 3 | 2 | Narrow, easily cut in half |
+| Varmaj Sabloj | 3 | 2 | 3 | Small and cheap — the natural first target |
+| La Dentoj | 3 | 4 | 3 | Worth more because it bleeds from three sides |
+
+**Every name on the board is Esperanto**, as the game's own name is. All of
+them happen to be diacritic-free, so a province's id is simply its name
+lowercased — there is no transliteration step to get wrong. The four
+nations are **Blua**, **Sukcena**, **Verda** and **Purpura**; their
+initials B, S, V and P are the non-colour ownership cue, which is why the
+violet seat is *Purpura* and not *Viola* — that would have collided with
+*Verda*.
+
+| Island | | Provinces |
+|---|---|---|
+| **Norda Vasto** | the northern expanse | Sulo (gannet), Frostkabo (frost cape), Longa Strando (long strand), Ventflanko (windward) |
+| **La Spino** | the spine | Amboso (anvil), Hoko (hook), Spindelo (spindle), Vosto (tail) |
+| **Varmaj Sabloj** | the warm sands | Sablobenko (sandbar), Laguno (lagoon), Konko (shell) |
+| **La Dentoj** | the teeth | Dentego (fang), Splito (splinter), Akrigilo (whetstone) |
 
 **Sea entrances** — the number of lanes reaching an island from elsewhere
 — is what actually decides how defensible it is. A large bonus behind

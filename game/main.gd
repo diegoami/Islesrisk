@@ -2,7 +2,10 @@ extends Node2D
 ## The shell: start screen, board, result screen, and the save between them.
 
 const DEFAULT_MAP := "small-sea"
-const SEAT_NAMES: Array[String] = ["Blue", "Amber", "Green", "Violet"]
+## The four nations, in Esperanto like everything else on the board. Their
+## initials — B, S, V, P — are the non-colour ownership cue, so they have to
+## stay distinct: "Viola" for the violet seat would have collided with "Verda".
+const SEAT_NAMES: Array[String] = ["Blua", "Sukcena", "Verda", "Purpura"]
 
 var _start: StartScreen
 var _play: PlayScreen

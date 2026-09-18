@@ -26,6 +26,7 @@ const LANE_WIDTH := 2.2
 const EDGE_TOLERANCE := 2.0
 const VIEW_MARGIN := 1.08
 const LABEL_SIZE := 20
+const ISLAND_LABEL_SIZE := 17
 const FLASH_SECONDS := 1.2
 
 var _state: GameState
@@ -116,6 +117,8 @@ func _draw() -> void:
 	for segment: PackedVector2Array in _coast_cache:
 		draw_polyline(segment, COAST, COAST_WIDTH, true)
 
+	for island: Island in _state.map.islands:
+		_draw_island_name(island)
 	for province: Province in _state.map.provinces:
 		_draw_marks(province)
 
@@ -169,6 +172,45 @@ func _draw_marks(province: Province) -> void:
 		13,
 		Color(TEXT_LIGHT, 0.75)
 	)
+
+
+## An island's name and what holding all of it pays, above its coastline.
+## Without this the bonus groups are invisible: the coast shows *which*
+## provinces make a landmass, but not what it is called or what it is worth.
+func _draw_island_name(island: Island) -> void:
+	var members := _state.map.provinces_of(island.id)
+	if members.is_empty():
+		return
+	var extent := Rect2(members[0].polygon[0], Vector2.ZERO)
+	for province: Province in members:
+		for point: Vector2 in province.polygon:
+			extent = extent.expand(point)
+
+	var holder := _island_holder(members)
+	var label := "%s  +%d" % [island.name, island.bonus]
+	var font := ThemeDB.fallback_font
+	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, ISLAND_LABEL_SIZE).x
+	var colour := TEXT_LIGHT if holder.is_empty() else PlayerPalette.for_player(_state, holder)
+	draw_string(
+		font,
+		Vector2(extent.get_center().x - width * 0.5, extent.position.y - 12.0),
+		label,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		ISLAND_LABEL_SIZE,
+		Color(colour, 1.0 if not holder.is_empty() else 0.65)
+	)
+
+
+## Whoever holds every province on it — and therefore collects the bonus.
+func _island_holder(members: Array[Province]) -> String:
+	var holder := _state.owner(members[0].id)
+	if holder.is_empty():
+		return ""
+	for province: Province in members:
+		if _state.owner(province.id) != holder:
+			return ""
+	return holder
 
 
 ## Coast to coast, not centre to centre: a lane between centroids runs over

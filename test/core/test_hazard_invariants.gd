@@ -141,10 +141,10 @@ func test_centres_wander_and_stay_on_the_board() -> void:
 func _mid_game(seed_value: int, rules: RuleSet = null) -> GameState:
 	var map := MapRepository.load_map("small-sea").map
 	var players: Array[Player] = [
-		Player.new("blue", "Blue"),
-		Player.new("green", "Green", true),
-		Player.new("red", "Red", true),
-		Player.new("brown", "Brown", true),
+		Player.new("blua", "Blua"),
+		Player.new("sukcena", "Sukcena", true),
+		Player.new("verda", "Verda", true),
+		Player.new("purpura", "Purpura", true),
 	]
 	var state := Rules.new_game(
 		map, rules if rules != null else RuleSet.classic(), players, seed_value

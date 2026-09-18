@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "small-sea",
-  "name": "Small Sea",
+  "name": "Malgranda Maro",
   "bounds": {
     "x": 0,
     "y": 0,
@@ -10,57 +10,57 @@
   },
   "islands": [
     {
-      "id": "north_reach",
-      "name": "North Reach",
+      "id": "norda_vasto",
+      "name": "Norda Vasto",
       "bonus": 3,
       "provinces": [
-        "gannet",
-        "cold_holm",
-        "long_strand",
-        "windward"
+        "sulo",
+        "frostkabo",
+        "longa_strando",
+        "ventflanko"
       ]
     },
     {
-      "id": "the_spine",
-      "name": "The Spine",
+      "id": "la_spino",
+      "name": "La Spino",
       "bonus": 3,
       "provinces": [
-        "anvil",
-        "hook",
-        "spindle",
-        "tail"
+        "amboso",
+        "hoko",
+        "spindelo",
+        "vosto"
       ]
     },
     {
-      "id": "warm_shoals",
-      "name": "Warm Shoals",
+      "id": "varmaj_sabloj",
+      "name": "Varmaj Sabloj",
       "bonus": 2,
       "provinces": [
-        "sandbar",
-        "lagoon",
-        "shell"
+        "sablobenko",
+        "laguno",
+        "konko"
       ]
     },
     {
-      "id": "the_teeth",
-      "name": "The Teeth",
+      "id": "la_dentoj",
+      "name": "La Dentoj",
       "bonus": 4,
       "provinces": [
-        "fang",
-        "splinter",
-        "grindstone"
+        "dentego",
+        "splito",
+        "akrigilo"
       ]
     }
   ],
   "provinces": [
     {
-      "id": "gannet",
-      "name": "Gannet",
-      "island": "north_reach",
+      "id": "sulo",
+      "name": "Sulo",
+      "island": "norda_vasto",
       "borders": [
-        "cold_holm",
-        "long_strand",
-        "windward"
+        "frostkabo",
+        "longa_strando",
+        "ventflanko"
       ],
       "sea_lanes": [],
       "polygon": [
@@ -111,16 +111,16 @@
       ]
     },
     {
-      "id": "cold_holm",
-      "name": "Cold Holm",
-      "island": "north_reach",
+      "id": "frostkabo",
+      "name": "Frostkabo",
+      "island": "norda_vasto",
       "borders": [
-        "gannet",
-        "long_strand",
-        "windward"
+        "sulo",
+        "longa_strando",
+        "ventflanko"
       ],
       "sea_lanes": [
-        "splinter"
+        "splito"
       ],
       "polygon": [
         [
@@ -170,15 +170,15 @@
       ]
     },
     {
-      "id": "long_strand",
-      "name": "Long Strand",
-      "island": "north_reach",
+      "id": "longa_strando",
+      "name": "Longa Strando",
+      "island": "norda_vasto",
       "borders": [
-        "gannet",
-        "cold_holm"
+        "sulo",
+        "frostkabo"
       ],
       "sea_lanes": [
-        "tail"
+        "vosto"
       ],
       "polygon": [
         [
@@ -224,12 +224,12 @@
       ]
     },
     {
-      "id": "windward",
-      "name": "Windward",
-      "island": "north_reach",
+      "id": "ventflanko",
+      "name": "Ventflanko",
+      "island": "norda_vasto",
       "borders": [
-        "gannet",
-        "cold_holm"
+        "sulo",
+        "frostkabo"
       ],
       "sea_lanes": [],
       "polygon": [
@@ -268,15 +268,15 @@
       ]
     },
     {
-      "id": "anvil",
-      "name": "Anvil",
-      "island": "the_spine",
+      "id": "amboso",
+      "name": "Amboso",
+      "island": "la_spino",
       "borders": [
-        "spindle",
-        "tail"
+        "spindelo",
+        "vosto"
       ],
       "sea_lanes": [
-        "lagoon"
+        "laguno"
       ],
       "polygon": [
         [
@@ -322,12 +322,12 @@
       ]
     },
     {
-      "id": "hook",
-      "name": "Hook",
-      "island": "the_spine",
+      "id": "hoko",
+      "name": "Hoko",
+      "island": "la_spino",
       "borders": [
-        "spindle",
-        "tail"
+        "spindelo",
+        "vosto"
       ],
       "sea_lanes": [],
       "polygon": [
@@ -374,13 +374,13 @@
       ]
     },
     {
-      "id": "spindle",
-      "name": "Spindle",
-      "island": "the_spine",
+      "id": "spindelo",
+      "name": "Spindelo",
+      "island": "la_spino",
       "borders": [
-        "anvil",
-        "hook",
-        "tail"
+        "amboso",
+        "hoko",
+        "vosto"
       ],
       "sea_lanes": [],
       "polygon": [
@@ -431,16 +431,16 @@
       ]
     },
     {
-      "id": "tail",
-      "name": "Tail",
-      "island": "the_spine",
+      "id": "vosto",
+      "name": "Vosto",
+      "island": "la_spino",
       "borders": [
-        "anvil",
-        "hook",
-        "spindle"
+        "amboso",
+        "hoko",
+        "spindelo"
       ],
       "sea_lanes": [
-        "long_strand"
+        "longa_strando"
       ],
       "polygon": [
         [
@@ -482,15 +482,15 @@
       ]
     },
     {
-      "id": "sandbar",
-      "name": "Sandbar",
-      "island": "warm_shoals",
+      "id": "sablobenko",
+      "name": "Sablobenko",
+      "island": "varmaj_sabloj",
       "borders": [
-        "lagoon",
-        "shell"
+        "laguno",
+        "konko"
       ],
       "sea_lanes": [
-        "splinter"
+        "splito"
       ],
       "polygon": [
         [
@@ -548,15 +548,15 @@
       ]
     },
     {
-      "id": "lagoon",
-      "name": "Lagoon",
-      "island": "warm_shoals",
+      "id": "laguno",
+      "name": "Laguno",
+      "island": "varmaj_sabloj",
       "borders": [
-        "sandbar",
-        "shell"
+        "sablobenko",
+        "konko"
       ],
       "sea_lanes": [
-        "anvil"
+        "amboso"
       ],
       "polygon": [
         [
@@ -610,15 +610,15 @@
       ]
     },
     {
-      "id": "shell",
-      "name": "Shell",
-      "island": "warm_shoals",
+      "id": "konko",
+      "name": "Konko",
+      "island": "varmaj_sabloj",
       "borders": [
-        "sandbar",
-        "lagoon"
+        "sablobenko",
+        "laguno"
       ],
       "sea_lanes": [
-        "splinter"
+        "splito"
       ],
       "polygon": [
         [
@@ -660,12 +660,12 @@
       ]
     },
     {
-      "id": "fang",
-      "name": "Fang",
-      "island": "the_teeth",
+      "id": "dentego",
+      "name": "Dentego",
+      "island": "la_dentoj",
       "borders": [
-        "splinter",
-        "grindstone"
+        "splito",
+        "akrigilo"
       ],
       "sea_lanes": [],
       "polygon": [
@@ -724,17 +724,17 @@
       ]
     },
     {
-      "id": "splinter",
-      "name": "Splinter",
-      "island": "the_teeth",
+      "id": "splito",
+      "name": "Splito",
+      "island": "la_dentoj",
       "borders": [
-        "fang",
-        "grindstone"
+        "dentego",
+        "akrigilo"
       ],
       "sea_lanes": [
-        "cold_holm",
-        "sandbar",
-        "shell"
+        "frostkabo",
+        "sablobenko",
+        "konko"
       ],
       "polygon": [
         [
@@ -784,12 +784,12 @@
       ]
     },
     {
-      "id": "grindstone",
-      "name": "Grindstone",
-      "island": "the_teeth",
+      "id": "akrigilo",
+      "name": "Akrigilo",
+      "island": "la_dentoj",
       "borders": [
-        "fang",
-        "splinter"
+        "dentego",
+        "splito"
       ],
       "sea_lanes": [],
       "polygon": [

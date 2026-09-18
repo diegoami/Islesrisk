@@ -71,9 +71,9 @@ static func _random_owned(state: GameState) -> String:
 static func classic_game(seed_value: int) -> GameState:
 	var map := MapRepository.load_map("small-sea").map
 	var players: Array[Player] = [
-		Player.new("blue", "Blue"),
-		Player.new("green", "Green", true),
-		Player.new("red", "Red", true),
-		Player.new("brown", "Brown", true),
+		Player.new("blua", "Blua"),
+		Player.new("sukcena", "Sukcena", true),
+		Player.new("verda", "Verda", true),
+		Player.new("purpura", "Purpura", true),
 	]
 	return Rules.new_game(map, RuleSet.classic(), players, seed_value)

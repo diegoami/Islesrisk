@@ -150,6 +150,12 @@ agree with it.
 
 - ~~The name.~~ **Settled 2026-09-17: Malpaco.** See DECISIONS.md,
   "Name, art and IP posture".
+- **An Esperantist's eye over the board.** Every name in the game is
+  Esperanto now — the four nations, the islands, the provinces, the map
+  itself. The grammar is straightforward and the words are dictionary
+  words, but whether they *read* naturally to someone who speaks the
+  language is their call, not ours. Worth an hour of someone's time
+  before any of it reaches a store page.
 - **Portfolio or commercial.** Answered at the vertical slice, Iteration
   5. Until then the project is built *as if* commercial, which in
   practice means only: track asset provenance in ASSETS.md from the
