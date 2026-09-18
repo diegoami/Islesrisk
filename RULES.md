@@ -60,8 +60,8 @@ Setup draws entirely from the seeded RNG. Same seed, same deal.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `perProvinceDivisor` | `3` | `floor(provincesOwned / divisor)` |
-| `minimum` | `3` | Floor, applied after the divisor |
+| `perProvinceDivisor` | `4` | `floor(provincesOwned / divisor)` |
+| `minimum` | `1` | Floor, applied after the divisor |
 | `islandBonus` | `'authored'` | `'authored'` (map supplies it) \| `'bySize'` \| `'off'` |
 | `centreBonus` | `2` | Per production centre owned |
 
@@ -247,12 +247,43 @@ a 14-province board, with the human taking 10-15 turns.
 resolving at all within 300 (100 games, greedy play — DECISIONS.md, "What
 a hundred games say"). That is roughly four times the target. The numbers
 in this document have always been declared guesses; these are the first
-measurements, and they say the guesses are wrong. Tuning is Iteration 10's
-job, not something to patch here piecemeal.
+measurements, and they say the guesses are wrong.
+
+**Retuned, 2026-09-18**, ahead of Iteration 10 because an opponent cannot
+be judged on a preset that does not resolve (DECISIONS.md, "The floor was
+the stalemate"). The reinforcement floor dropped from 3 to 1 and the
+divisor rose from 3 to 4. Length, 150 games per figure, greedy play:
+
+| Players | Before | After | Target |
+|---|---|---|---|
+| 2 | 32.4 rounds | **12.5** | 10-15 |
+| 4 | 59.8 rounds | **18.7** | 10-15 |
+| 6 | 77.2 rounds | **24.9** | — |
+
+**What tuning did not fix**: the share of games reaching a winner at all
+stayed at roughly 81-88% throughout, before and after, under every
+configuration tried. Around one game in six does not end. That is not an
+economy problem and no reinforcement setting touches it — see
+"Games that do not end" below.
 
 If a game runs long, the levers in order of preference are: **reinforcement
 rate down**, map smaller, hazard frequency up. Adding rules is not on the
-list.
+list. Measurement since bears the order out: the floor alone accounts for
+almost all of the improvement above, and the divisor for the remainder.
+
+## Games that do not end
+
+**Unspecified, and a known gap.** Roughly one Classic game in six reaches
+no winner: the board settles into stacks that the match rule makes
+mutually unattackable, and no player can make progress. The engine has no
+concept for this — such a game simply continues, and the harness caps it
+at an arbitrary 300 rounds.
+
+A rule set therefore needs a turn limit and a drawn terminal state, and
+the victory catalogue in SCENARIOS.md needs to say who wins a game that
+hits it. Until that exists, any measurement of "how long is a game"
+silently excludes the games that never finish, which flatters every
+number in this section.
 
 > An earlier draft of this section said *reinforcement rate **up***, by
 > analogy with Risk, where more armies means faster resolution. Measurement

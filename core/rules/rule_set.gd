@@ -23,8 +23,13 @@ class Setup:
 
 class Reinforcement:
 	extends RefCounted
-	var per_province_divisor: int = 3
-	var minimum: int = 3
+	## Tuned 2026-09-18 from floor 3 / divisor 3, which ran Classic at ~60
+	## rounds against a 10-15 target. The floor is the dominant lever: it is
+	## what every small holding is paid, so it sets the army inflation the
+	## match rule then turns into unattackable stacks. See DECISIONS.md,
+	## "The floor was the stalemate".
+	var per_province_divisor: int = 4
+	var minimum: int = 1
 	var island_bonus: String = "authored"  ## authored | bySize | off
 	var centre_bonus: int = 2
 

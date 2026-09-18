@@ -109,6 +109,14 @@ declared a guess; these are the numbers that test the guesses.
 |---|---|---|
 | Games resolving within 300 rounds | 78% | — |
 | Average rounds to a winner | 55.8 | 10-15 turns |
+
+> **Amended 2026-09-18.** The length figure was acted on ahead of
+> schedule — see "The floor was the stalemate" below, which retunes the
+> reinforcement economy and brings four-player Classic to 18.7 rounds.
+> The resolution figure turned out to measure something this entry did
+> not suspect: it is not a symptom of the long game and does not move
+> when the economy does. The hazard and centre rows below still stand
+> and are still untouched.
 | Hazards per player-turn | 0.105 | "roughly once every other turn" |
 | Centre moves per player-turn | 0.349 | 0.75 before no-ops |
 | Attacks per player-turn | 2.16, 26% capturing | — |
@@ -116,7 +124,8 @@ declared a guess; these are the numbers that test the guesses.
 - **Classic runs about four times longer than its own target.** Not a
   crisis: the target is a design intention and the constants were never
   tuned. It is recorded here so Iteration 10 starts from evidence instead
-  of from the same guesses.
+  of from the same guesses. *(Acted on 2026-09-18, earlier than planned:
+  the opponent could not be judged against a preset this slow.)*
 - **Hazards fire about five times less often than intended.** The three
   chances sum to 0.19 per turn before the no-ops — a quake needs a
   province of four armies, a revolt needs a leader holding more than one.
@@ -142,6 +151,60 @@ declared a guess; these are the numbers that test the guesses.
   hazards are doing most of the work of keeping the board playable, which
   is an argument for their importance and a warning about what happens in
   a preset that turns them off.
+
+## The floor was the stalemate (2026-09-18, ahead of Iteration 10)
+
+The product owner played a hot-seat game, reported that attacking is
+never worth it and that the board was heading for a stalemate, and asked
+for AI opponents that could play each other to find out whether the game
+goes anywhere. Tuning was pulled forward ahead of that, because an
+opponent judged on a preset that does not resolve fails for the preset's
+reasons, not its own.
+
+**Reinforcement floor 3 -> 1, divisor 3 -> 4.** 150 games per figure,
+four players, `small-sea`, greedy driver:
+
+| | Before | After |
+|---|---|---|
+| Rounds to a winner, 2 players | 32.4 | 12.5 |
+| Rounds to a winner, 4 players | 59.8 | 18.7 |
+| Rounds to a winner, 6 players | 77.2 | 24.9 |
+| Games reaching a winner | 85% | 81% |
+
+- **The floor, not the divisor, was doing the damage.** The floor is what
+  every small holding is paid regardless of size, so it sets the army
+  inflation that the match rule converts into unattackable stacks. A grid
+  over floor x divisor moves length from ~60 rounds to ~21 on the floor
+  alone; the divisor is worth a few rounds more. RULES.md's corrected
+  lever list said reinforcement rate down, and it was right.
+- **The obvious ways to make attacking easier all backfire.** Removing
+  the failure penalty drops resolution from 88% to 34%, because that
+  penalty is doing most of the actual transferring of provinces; giving
+  ties to the attacker drops it to 36%. The attacker's army tax
+  (`Dice(3, 1)` against the defender's `Dice(2, 0)`) is real — every
+  equal-strength attack the match rule permits is a losing bet, 2v2
+  costing the attacker its own province 89% of the time — but the fix is
+  to stop equal-strength attacks being the only affordable ones, which is
+  what the economy change does, not to hand the attacker the dice.
+- **Tuning does not fix the stalemate, and this is the finding that
+  matters.** Resolution sat at 81-88% before the change, after it, and
+  under every one of the twenty-odd configurations tried. About one game
+  in six ends with nobody winning. It is structural — mutually
+  unattackable stacks under the match rule — and it needs a turn limit
+  and a drawn state, which the engine does not have and RULES.md did not
+  specify. Recorded as a gap in RULES.md, "Games that do not end".
+- **Hazards were left alone deliberately.** Raising their frequency does
+  shorten games, and they still fire at about a fifth of the rate the
+  spec intends, but they are the product differentiator and how often
+  they should fire is a design question about feel, not a tuning knob to
+  turn while chasing a length target. It wants its own decision, with the
+  product owner playing the result.
+- **Every number here comes from the greedy driver**, which is test
+  scaffolding and not a player. The Iteration 2 entry's own warning
+  applies: a measurement of the rules is only as good as the mover
+  producing it. These constants are provisional and Iteration 10 should
+  re-measure them against a real opponent — which is now the next thing
+  built.
 
 ## GDScript stays, revisited on schedule (2026-09-18, Iteration 2)
 

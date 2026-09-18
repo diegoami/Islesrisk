@@ -11,9 +11,18 @@ can resume cleanly from any point. Check items off as they land; update
 - **Done**: Iterations 0-3 — the Godot project and five quality gates,
   the map and validator, the rules engine, and a playable hot-seat game
   with save and resume. 88 tests green, including 100 full games a run.
-- **Waiting on the product owner**: play a game and say whether chasing
-  the production centres is fun. Iteration 3 exists to ask that question
-  and everything after it assumes the answer is yes.
+- **Played, 2026-09-18**: the product owner played a hot-seat game and
+  reported that attacking is never worth it and the board was heading
+  for a stalemate. Both confirmed by measurement, and Classic's economy
+  was retuned in response, ahead of Iteration 10 — see DECISIONS.md,
+  "The floor was the stalemate". Four-player games went from 59.8 rounds
+  to 18.7 against a 10-15 target. **The verdict on whether chasing the
+  centres is fun is still owed** — it was not what the session answered.
+- **Open and unscheduled**: about one Classic game in six ends with no
+  winner, at every economy setting tried. Structural, not tuning. Needs
+  a turn limit and a drawn state (RULES.md, "Games that do not end");
+  picked up as the first item of Iteration 4 because the tournament has
+  no way to report the outcome otherwise.
 - **Next up**: Iteration 4 — the opponent, and the project's go/no-go.
 - **Note on the specs-first start**: the repository held nothing but
   documents for its first four commits, and two pivots arrived in that
@@ -164,14 +173,25 @@ the corrected state.
 
 Timeboxed, judged on **Classic only** — see DECISIONS.md.
 
+- [ ] **A turn limit and a drawn terminal state**, in the rule set and in
+      the victory catalogue. First, because one game in six does not end
+      and the tournament below cannot report a result it has no name for
 - [ ] `AiPolicy`, taking the rule set and active victory conditions as
       inputs; `core/ai` depends only on `core/rules`
+- [ ] **The turtle test, before the real policy**: a policy that never
+      attacks, run against the greedy one. If refusing to attack wins,
+      the rules have no engine and no amount of AI work hides it. Cheap,
+      and it can invalidate the iteration in an afternoon
+- [ ] Move `RandomDriver` and `GreedyDriver` out of `test/support` and
+      behind `AiPolicy`, so the harness and the game share one notion of
+      a mover
 - [ ] A baseline policy good enough to be irritating: island
       progress, current and likely-future centre positions, border
       pressure; respects the match rule when choosing where to stack
 - [ ] Three difficulty levels; any cheating declared in the open
-- [ ] Headless tournament harness — policies against each other over N
-      seeds, win rates reported
+- [ ] Headless tournament harness in `tools/` — policies against each
+      other over N seeds, reporting win rate, game length, **draw rate**,
+      and always which policies produced the numbers
 - [ ] Verified by the product owner actually playing it
 - **Go/no-go**: if the opponent isn't tolerable on Classic within the
   timebox, stop and reassess rather than extending. Recorded either way.
@@ -252,8 +272,14 @@ The spike proved the register on one board; this builds it as a system.
 
 ## Iteration 10 — Tuning
 
-- [ ] Measure real game length on Classic; tune with the levers in
-      RULES.md, **in their stated order**
+- [ ] Re-measure game length on Classic against a *real* opponent. The
+      economy was already retuned on 2026-09-18 (floor 3 -> 1, divisor
+      3 -> 4) to unblock Iteration 4, but every figure behind it came
+      from the greedy driver, so the constants are provisional
+- [ ] Hazard frequency, deliberately deferred from that retune: they
+      fire at about a fifth of the intended rate, and how often they
+      *should* fire is a question about feel that wants the product
+      owner playing the result, not a length target
 - [ ] Tune hazard rates and centre movement against real games — protect
       the centres first if something has to give
 - [ ] Play Still Waters against Classic. If hazards and centres don't
