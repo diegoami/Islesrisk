@@ -8,13 +8,14 @@ can resume cleanly from any point. Check items off as they land; update
 
 ## Status
 
-- **Done**: Iteration 0 (Godot project, the quality gates, the `core/`
-  purity guard, CI, export presets) and Iteration 1 (map types, the
-  validator, JSON reading, the `small-sea` board, and a renderer that
-  draws any map). 42 tests green, five gates.
-- **Next up**: Iteration 2 — the rules engine, headless: `RuleSet`,
-  `GameState`, the match rule, hazards and production centres. No UI
-  work at all in that iteration.
+- **Done**: Iterations 0-2 — the Godot project and five quality gates,
+  the map types and validator with the `small-sea` board, and the rules
+  engine: `RuleSet`, `GameState`, the match rule, the failure penalty,
+  hazards and production centres. 79 tests green, including 100 full
+  games played headless.
+- **Next up**: Iteration 3 — hot-seat, playable. The first iteration
+  where the board can be clicked, and the one that answers whether
+  chasing the centres is fun.
 - **Note on the specs-first start**: the repository held nothing but
   documents for its first four commits, and two pivots arrived in that
   window — web to Godot, and fixed game to configurable engine. Neither
@@ -112,29 +113,30 @@ the corrected state.
 - **Temporary**: land is tinted per island so the grouping can be checked
   by eye. Ownership colour replaces it in Iteration 3.
 
-## Iteration 2 — Rules engine, headless
+## Iteration 2 — Rules engine, headless — **DONE (2026-09-18)**
 
-The core of the project: data-driven from the start, hazards and centres
-included, Classic as the default `RuleSet`. No UI work at all.
-
-- [ ] `RuleSet` and the Classic preset — every table in RULES.md
-- [ ] `GameState` (rules resolved inline), `Action`, seeded RNG in state
-- [ ] Setup, reinforce, attack, redeploy — constants read from the rule
-      set, never from a literal; integer arithmetic only
-- [ ] Hazards: floods, earthquakes, revolts. Centres: placement, bonus,
-      wander
-- [ ] `conquest` victory, plus the condition-evaluation hook the rest
-      plug into at Iteration 7
-- [ ] The Classic checklist from RULES.md, the cross-configuration
-      tests, and the determinism property test over (seed, rules, map,
-      actions)
-- [ ] A headless 100-game harness reporting hazard rates and game length
-- [ ] **Revisit GDScript vs C#** while `core/` is still small — record
-      the outcome either way (ARCHITECTURE.md)
-- **Done when**: a scripted game plays start to finish under gdUnit4,
-  every listed rule has a failing-case test, a rules-toggled variant
-  plays without special-casing, and the harness numbers are in
-  DECISIONS.md.
+- [x] `RuleSet` and the Classic preset — every table in RULES.md, as data
+- [x] `GameState` (rule set resolved inline), `Action`, seeded RNG in state
+- [x] Setup, reinforce, attack, redeploy — every constant read from the
+      rule set, integer arithmetic throughout
+- [x] Hazards: floods, earthquakes, revolts. Centres: placement spread
+      across the board, the bonus, the wander
+- [x] `conquest` victory and the condition hook the rest plug into
+- [x] The Classic checklist from RULES.md, the cross-configuration tests,
+      and the determinism property test over (seed, rules, map, actions)
+- [x] A headless 100-game harness reporting game length and hazard rates
+- [x] GDScript vs C# revisited and settled (DECISIONS.md)
+- **Done when**: a scripted game plays start to finish, every listed rule
+  has a failing-case test, a rules-toggled variant plays without
+  special-casing, and the harness numbers are in DECISIONS.md. **All
+  hold** — 79 tests green.
+- **What the numbers said**: Classic runs ~4x longer than its target and
+  hazards fire ~5x less often than intended, and the lever list in
+  RULES.md pointed the wrong way and is corrected. See DECISIONS.md,
+  "What a hundred games say". Tuning stays Iteration 10's job.
+- **Not built**: cards. The `RuleSet` carries their configuration so a
+  preset can already switch them off, but no card is drawn or played
+  until Iteration 9.
 
 ## Iteration 3 — Hot-seat, playable
 

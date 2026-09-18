@@ -23,11 +23,12 @@ The goal is for it to be **beautiful**: painterly illustrated 2D, an
 animated sea, coastlines that read as drawn, and weather that is also a
 game mechanic.
 
-**It runs, but there is no game yet.** Iterations 0 and 1 are done: a
-Godot 4.7 project with five quality gates, and a board — four islands
-divided into fourteen provinces, loaded from validated JSON and drawn
-flat. There are no rules yet, so nothing can be clicked. Iteration 2
-builds the engine behind it; see [ROADMAP.md](ROADMAP.md).
+**The rules work; the board is not yet clickable.** Iterations 0-2 are
+done: a Godot 4.7 project with five quality gates, a board of four
+islands divided into fourteen provinces, and a complete headless rules
+engine — the match rule, the failure penalty, hazards, production
+centres, and a hundred games a run to prove it. Iteration 3 makes the
+board playable; see [ROADMAP.md](ROADMAP.md).
 
 ```
 git clone https://github.com/diegoami/Malpaco.git

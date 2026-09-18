@@ -60,7 +60,7 @@ Setup draws entirely from the seeded RNG. Same seed, same deal.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `perIsleDivisor` | `3` | `floor(islesOwned / divisor)` |
+| `perProvinceDivisor` | `3` | `floor(provincesOwned / divisor)` |
 | `minimum` | `3` | Floor, applied after the divisor |
 | `islandBonus` | `'authored'` | `'authored'` (map supplies it) \| `'bySize'` \| `'off'` |
 | `centreBonus` | `2` | Per production centre owned |
@@ -75,12 +75,12 @@ Setup draws entirely from the seeded RNG. Same seed, same deal.
 | `attackerDice` | `{ max: 3, minus: 1 }` | `min(max, armies − minus)` |
 | `defenderDice` | `{ max: 2, minus: 0 }` | `min(max, armies − minus)` |
 | `ties` | `'defender'` | Who wins an equal pair |
-| `failurePenalty` | `'loseIsle'` | `'loseIsle'`: a failed attack that leaves the attacker on 1 army hands the province to the defender and ends the phase. `'endPhase'` \| `'none'` |
+| `failurePenalty` | `'loseProvince'` | `'loseProvince'`: a failed attack that leaves the attacker on 1 army hands the province to the defender and ends the phase. `'endPhase'` \| `'none'` |
 | `capture` | `'diceCount'` | Minimum armies that must advance: `'diceCount'` \| `'all'` \| `'one'` |
 
 > **The match rule.** With the default `attackRule`, the attacking province
 > must hold **at least as many armies as the defending province**. An province
-> with 4 armies may not attack an province with 5.
+> with 4 armies may not attack a province with 5.
 
 This is the rule the combat model is built around. It removes the
 dogpile: you cannot grind a strong province down with a stream of hopeless
@@ -117,6 +117,12 @@ that move on their own. Everything else in this spec is table stakes.
 
 Resolved at the end of a turn, in listed order, from the seeded RNG.
 
+**Measured, Iteration 2**: 0.105 hazards per player-turn, against the
+"roughly once every other turn" this section asks for — about five times
+too rare. The three chances sum to 0.19 before the no-ops (a quake needs a
+province of four armies, a revolt needs a leader with more than one).
+Another number for Iteration 10.
+
 | Key | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Master switch |
@@ -142,8 +148,8 @@ owner. Ownership changes through attack only.
 | `bonus` | `2` | Reinforcements per turn to the owner |
 | `wanderChance` | `0.25` | Per centre, per turn, to move to a random adjacent province |
 
-Placed at setup on provinces nobody starts adjacent to where possible. They
-are the map's moving objectives: they give a board of otherwise
+Placed at setup on provinces spread as far apart as the board allows,
+chosen from the seeded RNG. They are the map's moving objectives: they give a board of otherwise
 interchangeable rocks *places worth wanting*, and stop the wanting from
 being a one-time land grab. Of everything in this spec they are the
 single most distinctive mechanic — no current mobile conquest game has
@@ -235,9 +241,26 @@ the same API.
 ## Time budget
 
 Classic targets a **complete four-player game in under five minutes** on
-a 14-province board, with the human taking 10-15 turns. If playtesting runs
-long, the levers in order of preference are: reinforcement rate up, map
-smaller, hazard frequency up. Adding rules is not on the list.
+a 14-province board, with the human taking 10-15 turns.
+
+**Measured, Iteration 2**: 55.8 rounds on average, with 78% of games
+resolving at all within 300 (100 games, greedy play — DECISIONS.md, "What
+a hundred games say"). That is roughly four times the target. The numbers
+in this document have always been declared guesses; these are the first
+measurements, and they say the guesses are wrong. Tuning is Iteration 10's
+job, not something to patch here piecemeal.
+
+If a game runs long, the levers in order of preference are: **reinforcement
+rate down**, map smaller, hazard frequency up. Adding rules is not on the
+list.
+
+> An earlier draft of this section said *reinforcement rate **up***, by
+> analogy with Risk, where more armies means faster resolution. Measurement
+> says the opposite holds here, and the match rule is why: more armies means
+> bigger stacks, and a stack an attacker must match is a stack that cannot
+> be attacked. Raising reinforcement lengthens a Malpaco game. Corrected
+> because a lever list is an instruction, and this one pointed the wrong
+> way.
 
 Other presets set their own targets, and larger boards are explicitly
 allowed to be long games — but **Classic is the preset the project is
@@ -272,7 +295,7 @@ validator — see [SCENARIOS.md](SCENARIOS.md).
 
 Under Classic:
 
-- An attack from an province below `minArmiesToAttack` is rejected.
+- An attack from a province below `minArmiesToAttack` is rejected.
 - An attack against a stronger province is rejected — at equality *and* one
   either side of it.
 - A non-adjacent attack, and an attack on your own province, are rejected.
@@ -286,7 +309,7 @@ Under Classic:
 
 Across configurations:
 
-- **No hazard, under any configuration, takes an province below 1 army,
+- **No hazard, under any configuration, takes a province below 1 army,
   eliminates a player, or changes an owner.**
 - `attackRule: 'classic'` permits the attacks `'match'` rejects, and
   changes nothing else.

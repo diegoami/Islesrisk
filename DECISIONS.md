@@ -99,6 +99,70 @@ changed the plan, so it gets its own entry rather than a footnote.
   should be played before anyone leans harder on this entry — it is
   free, and it is the one result that would change the plan again.
 
+## What a hundred games say (2026-09-18, Iteration 2)
+
+The first measurements of the rules actually running. 100 Classic games,
+four players, played end to end headless. Every constant in RULES.md was
+declared a guess; these are the numbers that test the guesses.
+
+| | Measured | RULES.md asks for |
+|---|---|---|
+| Games resolving within 300 rounds | 78% | — |
+| Average rounds to a winner | 55.8 | 10-15 turns |
+| Hazards per player-turn | 0.105 | "roughly once every other turn" |
+| Centre moves per player-turn | 0.349 | 0.75 before no-ops |
+| Attacks per player-turn | 2.16, 26% capturing | — |
+
+- **Classic runs about four times longer than its own target.** Not a
+  crisis: the target is a design intention and the constants were never
+  tuned. It is recorded here so Iteration 10 starts from evidence instead
+  of from the same guesses.
+- **Hazards fire about five times less often than intended.** The three
+  chances sum to 0.19 per turn before the no-ops — a quake needs a
+  province of four armies, a revolt needs a leader holding more than one.
+  Since the hazards are the differentiator, this is the number most worth
+  getting right.
+- **The lever list in RULES.md was backwards, and is corrected.** It said
+  to raise the reinforcement rate to shorten a game, by analogy with Risk.
+  Under the match rule the opposite holds: more armies means bigger stacks,
+  and a stack an attacker must *match* is a stack that cannot be attacked
+  at all. A probe bears it out — under arbitrary play Classic finished 0%
+  of games, while dropping the reinforcement floor to 1 and the divisor to
+  4 finished 55%. A wrong lever in a spec is worse than a missing one,
+  because someone will follow it.
+- **"It doesn't resolve" was nearly the wrong conclusion.** Under purely
+  arbitrary play *no* Classic game finished, and the first reading was that
+  the rules could not resolve a game. A mover that simply concentrates
+  force and attacks where it is strongest finishes 78% of them. The lesson
+  for Iteration 4: a measurement of the rules is only as good as the player
+  driving it, and the harness numbers must always say which driver produced
+  them.
+- **Army inflation is the mechanism behind all of it.** With hazards off,
+  the board carries ~3,400 armies by round 300; with hazards on, ~750. The
+  hazards are doing most of the work of keeping the board playable, which
+  is an argument for their importance and a warning about what happens in
+  a preset that turns them off.
+
+## GDScript stays, revisited on schedule (2026-09-18, Iteration 2)
+
+ARCHITECTURE.md scheduled exactly one revisit of the language choice, at
+the end of Iteration 2, while `core/` was still small enough to move. It
+is done, and the answer is to stay.
+
+- `core/` is about 1,700 lines of statically typed GDScript and has been
+  comfortable to write and read. The warnings-as-errors settings caught
+  real mistakes at parse time.
+- The whole suite — 79 tests including 100 full games — runs headless in
+  seconds. Nothing is near a performance limit, and the AI's search in
+  Iteration 4 is the first thing that might be; the state is a handful of
+  dictionaries and clones cheaply.
+- C# would cost the editor integration and add a toolchain (the cloud
+  container has no .NET SDK), for benefits that only show up in a much
+  larger codebase.
+- **Not revisited again.** The scheduled decision was the point; reopening
+  it later without new evidence is how a project spends its budget on
+  tooling instead of on the game.
+
 ## The board is islands with provinces, not a scatter of islands (2026-09-18)
 
 Corrected by the product owner after Iteration 1 shipped the wrong shape.
