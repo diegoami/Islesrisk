@@ -99,6 +99,38 @@ changed the plan, so it gets its own entry rather than a footnote.
   should be played before anyone leans harder on this entry — it is
   free, and it is the one result that would change the plan again.
 
+## The board is islands with provinces, not a scatter of islands (2026-09-18)
+
+Corrected by the product owner after Iteration 1 shipped the wrong shape.
+
+- **What was wrong.** The first board made every territory its own small
+  island floating in open water — fourteen of them in a ring. That is not
+  *Isle Wars*, and it is not Risk or Imperialism 2 either. The research
+  had already said so — "46 countries divided between 9 continents" — and
+  was read as nine loose groups of separate islands rather than nine
+  landmasses, each subdivided.
+- **What it is.** A handful of **islands**, each divided into
+  **provinces**. The province is the unit of ownership; the island is the
+  bonus group, the Risk "continent". Classic is four islands and fourteen
+  provinces.
+- **Two kinds of adjacency, kept apart.** A **border** is land and always
+  joins provinces on the same island; a **sea lane** crosses water to
+  another island. The rules treat them alike today, and `neighbours()`
+  returns the union so most code need not care. They are stored separately
+  anyway, because making a water crossing harder is the most obvious rule
+  a preset might want, and a map that has lost the distinction cannot get
+  it back. The validator enforces both directions of the rule.
+- **The geometry changed with it.** Provinces *tile* a landmass rather
+  than floating separately, so a board is now a partition, not a scatter
+  of blobs — which is why generation has to go islands-first: outline the
+  landmass, then subdivide it with clipped Voronoi. Generating cells and
+  grouping them afterwards is precisely the mistake that produced the
+  wrong board.
+- **Cost of the correction**: one day, one iteration's data and renderer,
+  no rules code — the engine had not been written yet. Worth noting in
+  favour of the specs-first order: this landed while there was still
+  almost nothing to throw away.
+
 ## Scope: small map, short game (2026-09-15, scoped to the Classic preset the same day)
 
 **Amended**: the product owner asked for variable map sizes, custom
@@ -109,7 +141,7 @@ than the only game the engine can play. Large slow boards are legal and
 explicitly supported; they are simply not what the project is tuned
 against.
 
-- **14 isles, not 46 territories.** The original's 46-across-9-continents
+- **14 provinces, not 46 territories.** The original's 46-across-9-continents
   board is a forty-minute game and a large pile of hand-authored data
   before anything is playable. territorial.io's numbers say session
   length is what sells in this genre now. A small board also means the
@@ -150,16 +182,16 @@ than allowed to become unbounded.
   past it, and a conquest game's first thirty seconds are where it is
   won or lost. The generality is reachable through scenarios, not
   through a settings wall.
-- **Classic stays the tuning target.** Five minutes, 14 isles, four
-  players. A change that improves a 50-isle scenario at Classic's
+- **Classic stays the tuning target.** Five minutes, 14 provinces, four
+  players. A change that improves a 50-province scenario at Classic's
   expense is a regression, and RULES.md says so. Without one preset
   holding that line, "configurable" quietly becomes "tuned for nothing".
 - **No rule may be a compiled-in assumption.** Stated in RULES.md and
   ARCHITECTURE.md, enforced by cross-configuration tests. The AI is the
   likeliest place to violate this and the hardest place to notice it.
 - **The AI got materially harder, and this is the real cost.** An
-  opponent for one 14-isle board with one rule set is a tractable
-  problem. An opponent that must play acceptably at 12 isles and 50, with
+  opponent for one 14-province board with one rule set is a tractable
+  problem. An opponent that must play acceptably at 12 provinces and 50, with
   the match rule on or off, with hazards on or off, and toward six
   different victory conditions, is a substantially bigger one — a
   `domination` game and a `survival` game want different behaviour from
@@ -345,7 +377,7 @@ and 2.5D).
   describing the board — the state this game leaves you in, never
   settled, never consolidated, which is what the hazards and the roaming
   centres are for. The earlier candidates split into naming the setting
-  (Insularo, "archipelago") or the thesis in English (Saltcrown);
+  (Insularo, "island") or the thesis in English (Saltcrown);
   Malpaco does the second in a language that owes nothing to the genre's
   vocabulary.
 - **"Eterna Malpaco" was considered and the first word dropped.**

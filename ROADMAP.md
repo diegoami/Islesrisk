@@ -8,10 +8,10 @@ can resume cleanly from any point. Check items off as they land; update
 
 ## Status
 
-- **Done**: Iteration 0 (Godot project, four quality gates, the `core/`
+- **Done**: Iteration 0 (Godot project, the quality gates, the `core/`
   purity guard, CI, export presets) and Iteration 1 (map types, the
   validator, JSON reading, the `small-sea` board, and a renderer that
-  draws any map). 36 tests green.
+  draws any map). 42 tests green, five gates.
 - **Next up**: Iteration 2 — the rules engine, headless: `RuleSet`,
   `GameState`, the match rule, hazards and production centres. No UI
   work at all in that iteration.
@@ -76,33 +76,41 @@ Shipped as v0.0.1. Every item verified on Godot 4.7.2 before the push.
   something real to guard and to test, and this is the piece the
   determinism guarantee rests on.
 
-## Iteration 1 — Map data, validator, the Classic board — **DONE (2026-09-17)**
+## Iteration 1 — Map data, validator, the Classic board — **DONE (2026-09-18)**
 
-- [x] `GameMap` / `Isle` / `Archipelago` in `core/rules`, plain `RefCounted`
-- [x] `MapValidator` in `core/validate` — identity, membership, lanes,
-      geometry and connectivity, returning *every* problem rather than the
-      first, so fixing a map is one pass instead of ten
+Shipped, then corrected the same week: the first board made every
+territory its own island. The board is islands divided into provinces
+(DECISIONS.md, "The board is islands with provinces"). What follows is
+the corrected state.
+
+- [x] `Province`, `Island`, `GameMap` in `core/rules`, plain `RefCounted`,
+      with borders and sea lanes stored separately
+- [x] `MapValidator` in `core/validate` — identity, membership, both kinds
+      of crossing, geometry, island contiguity and whole-board
+      connectivity, returning *every* problem rather than the first
 - [x] `MapReader`: JSON text to a `GameMap`, pure, with untrusted-input
       hardening — schema check, unknown fields rejected rather than
-      ignored, caps on isles, polygon points and string lengths. Parsing
-      validates too, so a caller cannot forget to
+      ignored, caps on provinces, polygon points and string lengths.
+      Reading validates too, so a caller cannot forget to
 - [x] `MapRepository` in `game/` does the file reading. `core/` may not
       touch `FileAccess` (the purity guard enforces it), which also puts
       I/O at the edge and leaves the parser testable with a string
-- [x] `small-sea`: 14 isles, 4 archipelagos, 17 lanes, matching RULES.md's
-      table — including the entrance counts each archipelago's note claims
-- [x] `BoardView` renders any map at any size and frames the camera to the
-      board's own coordinate space
+- [x] `small-sea`: 4 islands, 14 provinces, 16 land borders and 5 sea
+      lanes, matching RULES.md's table including the sea-entrance counts.
+      Provinces are clipped-Voronoi cells that tile each island exactly
+- [x] `BoardView` renders any map at any size: provinces filled and
+      outlined, the coastline drawn from the edges no neighbour shares,
+      sea lanes as the shortest hop between two shores
+- [x] **A fifth gate, `smoke`** — runs the game and fails on any script
+      error. Added because a refactor deleted a method still called from
+      `_ready` and format, lint, test and export all stayed green while
+      the game opened to a blank screen. Verified by breaking the game on
+      purpose
 - **Done when**: the board renders at any map size, and a deliberately
-  broken map fails the gates. **Both hold** — 36 tests green, of which 15
-  are validator rules each breaking exactly one thing, and a test that
-  checks the shipped map against RULES.md's own table.
-- **Temporary**: land is tinted per archipelago so the grouping can be
-  checked by eye. Ownership colour replaces it in Iteration 3.
-- **Noted for tuning**: `small-sea` came out as a ring with an empty
-  middle. It honours every archipelago description in RULES.md, but there
-  is no contested centre — worth revisiting when the generator lands
-  (Iteration 6) or at tuning (Iteration 10).
+  broken map fails the gates. **Both hold** — 42 tests green, of which 19
+  are validator rules each breaking exactly one thing.
+- **Temporary**: land is tinted per island so the grouping can be checked
+  by eye. Ownership colour replaces it in Iteration 3.
 
 ## Iteration 2 — Rules engine, headless
 
@@ -130,7 +138,7 @@ included, Classic as the default `RuleSet`. No UI work at all.
 
 ## Iteration 3 — Hot-seat, playable
 
-- [ ] Click an isle to select, click an adjacent enemy isle to attack;
+- [ ] Click an province to select, click an adjacent enemy province to attack;
       illegal targets are not offered, and the reason is visible
 - [ ] Phase bar, reinforcement placement, redeploy, end turn; an empty
       phase is skipped, not shown empty
@@ -149,7 +157,7 @@ Timeboxed, judged on **Classic only** — see DECISIONS.md.
 
 - [ ] `AiPolicy`, taking the rule set and active victory conditions as
       inputs; `core/ai` depends only on `core/rules`
-- [ ] A baseline policy good enough to be irritating: archipelago
+- [ ] A baseline policy good enough to be irritating: island
       progress, current and likely-future centre positions, border
       pressure; respects the match rule when choosing where to stack
 - [ ] Three difficulty levels; any cheating declared in the open
@@ -184,15 +192,15 @@ visual register the whole game commits to.
 Where the engine's generality and the art system meet, and the first
 real test of both.
 
-- [ ] `core/mapgen`: points → cells → lanes → archipelagos → centres,
+- [ ] `core/mapgen`: points → cells → lanes → islands → centres,
       per SCENARIOS.md, all seeded
-- [ ] `MapGenParams`: size, archipelago count, layout, lane density,
+- [ ] `MapGenParams`: size, island count, layout, lane density,
       symmetry; output passes the Iteration 1 validator including the
       fairness checks
 - [ ] Property test: 1000 seeds across the parameter space, every map
       valid, no retry loops
-- [ ] **The art system survives arbitrary polygons** — thin isles, fat
-      isles, long coastlines, 50-isle boards. Anything that only looked
+- [ ] **The art system survives arbitrary polygons** — thin provinces, fat
+      provinces, long coastlines, 50-province boards. Anything that only looked
       right on `small-sea` is found and fixed here, not assumed
 - [ ] Re-validate the AI across generated boards; a pass at Iteration 4
       is provisional until this runs
@@ -205,7 +213,7 @@ real test of both.
       objectives, and the "no way to end" validator rule
 - [ ] Scenario JSON: schema version, `extends` resolution, full
       validation of untrusted input, no `ResourceLoader`
-- [ ] The built-in presets — Classic, Blitz, Open Sea, Archipelago,
+- [ ] The built-in presets — Classic, Blitz, Open Sea, Island,
       Still Waters, Last Stand
 - [ ] Import/export a scenario file; a short share code for a seed
 - [ ] AI reads the active victory conditions — at minimum it plays
@@ -231,7 +239,7 @@ The spike proved the register on one board; this builds it as a system.
 - [ ] Bombard, Shield, Airlift; deck, draw-on-capture, hand cap, reshuffle
 - [ ] Hand UI; one card per turn; AI plays them or declares that it doesn't
 - **Done when**: each card has a test proving it can't break an
-  invariant (Bombard can't capture, Airlift can't strand an isle).
+  invariant (Bombard can't capture, Airlift can't strand an province).
 
 ## Iteration 10 — Tuning
 

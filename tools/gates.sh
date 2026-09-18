@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Malpaco quality gates: format, lint, test, export.
+# Malpaco quality gates: format, lint, test, smoke, export.
 #
 # Run them all with ./tools/gates.sh. The committed pre-push hook runs this,
 # so a push that would turn CI red is stopped on your machine instead.
@@ -64,7 +64,23 @@ else
 	bad "test"
 fi
 
-# --- 4. export --------------------------------------------------------------
+# --- 4. smoke ---------------------------------------------------------------
+# Runs the actual game for a moment and fails on any script error. Added after
+# a refactor deleted a method still called from _ready: format, lint, test and
+# export were all green while the game opened to a blank screen, because
+# nothing in the gates had ever loaded the main scene.
+say "smoke (the game starts)"
+SMOKE_LOG="$(mktemp)"
+"$GODOT" --path . --headless --quit-after 90 >"$SMOKE_LOG" 2>&1
+if grep -qE "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" "$SMOKE_LOG"; then
+	grep -E "SCRIPT ERROR|Parse Error|Compile Error|Failed to load script" "$SMOKE_LOG" | head -10
+	bad "smoke — the game reported script errors on startup"
+else
+	ok "smoke"
+fi
+rm -f "$SMOKE_LOG"
+
+# --- 5. export --------------------------------------------------------------
 say "export (Linux release build)"
 TEMPLATE_DIR="${HOME}/.local/share/godot/export_templates/4.7.2.stable"
 if [[ ! -d "$TEMPLATE_DIR" ]]; then

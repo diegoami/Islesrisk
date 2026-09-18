@@ -21,8 +21,8 @@ func _ready() -> void:
 	board.show_map(result.map)
 	_show_caption(
 		(
-			"%s — %d isles, %d archipelagos"
-			% [result.map.name, result.map.size(), result.map.archipelagos.size()]
+			"%s — %d provinces on %d islands"
+			% [result.map.name, result.map.size(), result.map.islands.size()]
 		)
 	)
 

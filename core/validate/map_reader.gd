@@ -13,14 +13,14 @@ extends RefCounted
 
 const SCHEMA := 1
 
-const MAX_ISLES := 512
+const MAX_PROVINCES := 512
 const MAX_POLYGON_POINTS := 256
 const MAX_NAME_LENGTH := 64
 const MAX_ID_LENGTH := 64
 
-const MAP_KEYS := ["schema", "id", "name", "bounds", "isles", "archipelagos"]
-const ISLE_KEYS := ["id", "name", "archipelago", "neighbours", "polygon", "label_at"]
-const ARCHIPELAGO_KEYS := ["id", "name", "bonus", "isles"]
+const MAP_KEYS := ["schema", "id", "name", "bounds", "provinces", "islands"]
+const PROVINCE_KEYS := ["id", "name", "island", "borders", "sea_lanes", "polygon", "label_at"]
+const ISLAND_KEYS := ["id", "name", "bonus", "provinces"]
 const BOUNDS_KEYS := ["x", "y", "width", "height"]
 
 
@@ -42,22 +42,21 @@ static func read(json_text: String) -> MapReadResult:
 		errors.append("unsupported schema %d — this build reads %d" % [schema, SCHEMA])
 		return MapReadResult.failure(errors)
 
-	var archipelagos: Array[Archipelago] = []
-	var raw_archipelagos: Array = _array_at(root, "archipelagos", errors, "map")
-	for entry: Variant in raw_archipelagos:
-		var archipelago := _read_archipelago(entry, errors)
-		if archipelago != null:
-			archipelagos.append(archipelago)
+	var islands: Array[Island] = []
+	for entry: Variant in _array_at(root, "islands", errors, "map"):
+		var island := _read_island(entry, errors)
+		if island != null:
+			islands.append(island)
 
-	var isles: Array[Isle] = []
-	var raw_isles: Array = _array_at(root, "isles", errors, "map")
-	if raw_isles.size() > MAX_ISLES:
-		errors.append("map has %d isles; the cap is %d" % [raw_isles.size(), MAX_ISLES])
+	var raw_provinces: Array = _array_at(root, "provinces", errors, "map")
+	if raw_provinces.size() > MAX_PROVINCES:
+		errors.append("map has %d provinces; the cap is %d" % [raw_provinces.size(), MAX_PROVINCES])
 		return MapReadResult.failure(errors)
-	for entry: Variant in raw_isles:
-		var isle := _read_isle(entry, errors)
-		if isle != null:
-			isles.append(isle)
+	var provinces: Array[Province] = []
+	for entry: Variant in raw_provinces:
+		var province := _read_province(entry, errors)
+		if province != null:
+			provinces.append(province)
 
 	if not errors.is_empty():
 		return MapReadResult.failure(errors)
@@ -66,8 +65,8 @@ static func read(json_text: String) -> MapReadResult:
 		_string_at(root, "id", errors, "map", MAX_ID_LENGTH),
 		_string_at(root, "name", errors, "map", MAX_NAME_LENGTH),
 		_read_bounds(root.get("bounds"), errors),
-		isles,
-		archipelagos
+		provinces,
+		islands
 	)
 	if not errors.is_empty():
 		return MapReadResult.failure(errors)
@@ -78,57 +77,59 @@ static func read(json_text: String) -> MapReadResult:
 	return MapReadResult.new(map, [])
 
 
-static func _read_isle(entry: Variant, errors: Array[String]) -> Isle:
+static func _read_province(entry: Variant, errors: Array[String]) -> Province:
 	if not entry is Dictionary:
-		errors.append("an isle entry is not an object")
+		errors.append("a province entry is not an object")
 		return null
 	var raw: Dictionary = entry
-	errors.append_array(_unexpected_keys(raw, ISLE_KEYS, "isle"))
+	errors.append_array(_unexpected_keys(raw, PROVINCE_KEYS, "province"))
 
-	var polygon := PackedVector2Array()
-	var raw_polygon: Array = _array_at(raw, "polygon", errors, "isle")
+	var raw_polygon: Array = _array_at(raw, "polygon", errors, "province")
 	if raw_polygon.size() > MAX_POLYGON_POINTS:
 		errors.append(
 			(
-				"an isle polygon has %d points; the cap is %d"
+				"a province polygon has %d points; the cap is %d"
 				% [raw_polygon.size(), MAX_POLYGON_POINTS]
 			)
 		)
 		return null
+	var polygon := PackedVector2Array()
 	for point: Variant in raw_polygon:
 		polygon.append(_read_point(point, errors))
 
-	var neighbours := PackedStringArray()
-	for neighbour: Variant in _array_at(raw, "neighbours", errors, "isle"):
-		neighbours.append(str(neighbour))
-
-	return Isle.new(
-		_string_at(raw, "id", errors, "isle", MAX_ID_LENGTH),
-		_string_at(raw, "name", errors, "isle", MAX_NAME_LENGTH),
-		_string_at(raw, "archipelago", errors, "isle", MAX_ID_LENGTH),
-		neighbours,
+	return Province.new(
+		_string_at(raw, "id", errors, "province", MAX_ID_LENGTH),
+		_string_at(raw, "name", errors, "province", MAX_NAME_LENGTH),
+		_string_at(raw, "island", errors, "province", MAX_ID_LENGTH),
+		_read_ids(raw, "borders", errors, "province"),
+		_read_ids(raw, "sea_lanes", errors, "province"),
 		polygon,
 		_read_point(raw.get("label_at"), errors)
 	)
 
 
-static func _read_archipelago(entry: Variant, errors: Array[String]) -> Archipelago:
+static func _read_island(entry: Variant, errors: Array[String]) -> Island:
 	if not entry is Dictionary:
-		errors.append("an archipelago entry is not an object")
+		errors.append("an island entry is not an object")
 		return null
 	var raw: Dictionary = entry
-	errors.append_array(_unexpected_keys(raw, ARCHIPELAGO_KEYS, "archipelago"))
+	errors.append_array(_unexpected_keys(raw, ISLAND_KEYS, "island"))
 
-	var members := PackedStringArray()
-	for member: Variant in _array_at(raw, "isles", errors, "archipelago"):
-		members.append(str(member))
-
-	return Archipelago.new(
-		_string_at(raw, "id", errors, "archipelago", MAX_ID_LENGTH),
-		_string_at(raw, "name", errors, "archipelago", MAX_NAME_LENGTH),
+	return Island.new(
+		_string_at(raw, "id", errors, "island", MAX_ID_LENGTH),
+		_string_at(raw, "name", errors, "island", MAX_NAME_LENGTH),
 		int(raw.get("bonus", 0)),
-		members
+		_read_ids(raw, "provinces", errors, "island")
 	)
+
+
+static func _read_ids(
+	raw: Dictionary, key: String, errors: Array[String], context: String
+) -> PackedStringArray:
+	var ids := PackedStringArray()
+	for value: Variant in _array_at(raw, key, errors, context):
+		ids.append(str(value))
+	return ids
 
 
 static func _read_bounds(value: Variant, errors: Array[String]) -> Rect2:

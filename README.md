@@ -4,7 +4,7 @@
 reverses it.*
 
 A turn-based island-conquest game for the desktop, built in Godot 4:
-take an archipelago, hold it, and try not to lose it to a storm. A
+take an island, hold it, and try not to lose it to a storm. A
 modern re-take on the ruleset of Soleau Software's *Isle Wars* (1994) —
 **not** a port and not a clone of it.
 
@@ -16,7 +16,7 @@ settles.
 Underneath it is a **configurable engine**: boards generated or
 hand-drawn at any size, rules as a data object, two to eight players,
 seven victory conditions, and scenarios that save and travel as files.
-What a player picks is a *preset* — Classic, Blitz, Archipelago — which
+What a player picks is a *preset* — Classic, Blitz, Island — which
 is just a named rule set with a board attached.
 
 The goal is for it to be **beautiful**: painterly illustrated 2D, an
@@ -24,10 +24,10 @@ animated sea, coastlines that read as drawn, and weather that is also a
 game mechanic.
 
 **It runs, but there is no game yet.** Iterations 0 and 1 are done: a
-Godot 4.7 project with four quality gates, and a board — 14 isles in 4
-archipelagos, loaded from validated JSON and drawn flat. There are no
-rules yet, so nothing can be clicked. Iteration 2 builds the engine
-behind it; see [ROADMAP.md](ROADMAP.md).
+Godot 4.7 project with five quality gates, and a board — four islands
+divided into fourteen provinces, loaded from validated JSON and drawn
+flat. There are no rules yet, so nothing can be clicked. Iteration 2
+builds the engine behind it; see [ROADMAP.md](ROADMAP.md).
 
 ```
 git clone https://github.com/diegoami/Malpaco.git
@@ -49,7 +49,7 @@ things are genuinely unoccupied:
 
 - **A board that keeps moving under you.** Floods, earthquakes and
   revolts aimed at whoever is winning, and production centres that
-  wander from isle to isle. No current conquest game does either.
+  wander from province to province. No current conquest game does either.
 - **Beauty.** Desktop Risk-likes are overwhelmingly functional-looking —
   UI over a map. A conquest game that is genuinely lovely to look at is
   a sharper differentiator than any rule, and the two arguments meet in

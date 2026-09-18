@@ -50,9 +50,9 @@ are Classic.
 | Key | Default | Meaning |
 |---|---|---|
 | `deal` | `'roundRobin'` | `'roundRobin'` \| `'random'` \| `'authored'` (scenario supplies ownership) |
-| `startingArmies` | `1` | Armies on every isle after the deal |
+| `startingArmies` | `1` | Armies on every province after the deal |
 | `distributionPool` | `10` | Extra armies each player places, one at a time, in turn order |
-| `shortStackBonus` | `1` | Extra armies for players dealt fewer isles than the leader |
+| `shortStackBonus` | `1` | Extra armies for players dealt fewer provinces than the leader |
 
 Setup draws entirely from the seeded RNG. Same seed, same deal.
 
@@ -62,7 +62,7 @@ Setup draws entirely from the seeded RNG. Same seed, same deal.
 |---|---|---|
 | `perIsleDivisor` | `3` | `floor(islesOwned / divisor)` |
 | `minimum` | `3` | Floor, applied after the divisor |
-| `archipelagoBonus` | `'authored'` | `'authored'` (map supplies it) \| `'bySize'` \| `'off'` |
+| `islandBonus` | `'authored'` | `'authored'` (map supplies it) \| `'bySize'` \| `'off'` |
 | `centreBonus` | `2` | Per production centre owned |
 
 ### `combat`
@@ -71,20 +71,20 @@ Setup draws entirely from the seeded RNG. Same seed, same deal.
 |---|---|---|
 | `attackRule` | `'match'` | `'match'`: attacker must hold **≥** the defender. `'classic'`: any attack allowed. `'threshold'`: attacker ≥ defender × `attackRatio` |
 | `attackRatio` | `1.0` | Only read when `attackRule === 'threshold'` |
-| `minArmiesToAttack` | `2` | Armies required on the attacking isle |
+| `minArmiesToAttack` | `2` | Armies required on the attacking province |
 | `attackerDice` | `{ max: 3, minus: 1 }` | `min(max, armies − minus)` |
 | `defenderDice` | `{ max: 2, minus: 0 }` | `min(max, armies − minus)` |
 | `ties` | `'defender'` | Who wins an equal pair |
-| `failurePenalty` | `'loseIsle'` | `'loseIsle'`: a failed attack that leaves the attacker on 1 army hands the isle to the defender and ends the phase. `'endPhase'` \| `'none'` |
+| `failurePenalty` | `'loseIsle'` | `'loseIsle'`: a failed attack that leaves the attacker on 1 army hands the province to the defender and ends the phase. `'endPhase'` \| `'none'` |
 | `capture` | `'diceCount'` | Minimum armies that must advance: `'diceCount'` \| `'all'` \| `'one'` |
 
-> **The match rule.** With the default `attackRule`, the attacking isle
-> must hold **at least as many armies as the defending isle**. An isle
-> with 4 armies may not attack an isle with 5.
+> **The match rule.** With the default `attackRule`, the attacking province
+> must hold **at least as many armies as the defending province**. An province
+> with 4 armies may not attack an province with 5.
 
 This is the rule the combat model is built around. It removes the
-dogpile: you cannot grind a strong isle down with a stream of hopeless
-1-army pokes, so stacking a border isle actually defends it, and the
+dogpile: you cannot grind a strong province down with a stream of hopeless
+1-army pokes, so stacking a border province actually defends it, and the
 interesting question becomes *where* to spend a stack rather than *how
 many* attacks to make.
 
@@ -104,7 +104,7 @@ preset, but not an accident to stumble into.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `movesPerTurn` | `1` | Moves between adjacent owned isles, 1 army left behind |
+| `movesPerTurn` | `1` | Moves between adjacent owned provinces, 1 army left behind |
 | `chain` | `false` | Whether a moved stack may move again |
 
 ### `hazards`
@@ -120,9 +120,9 @@ Resolved at the end of a turn, in listed order, from the seeded RNG.
 | Key | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Master switch |
-| `flood` | `{ chance: 0.08, lose: 'half' }` | A random isle loses half its armies, rounded down |
-| `quake` | `{ chance: 0.05, minArmies: 4, lose: 2 }` | A random isle of at least `minArmies` loses `lose` |
-| `revolt` | `{ chance: 0.06, target: 'leader', lose: 'third' }` | The leader's largest isle loses a third |
+| `flood` | `{ chance: 0.08, lose: 'half' }` | A random province loses half its armies, rounded down |
+| `quake` | `{ chance: 0.05, minArmies: 4, lose: 2 }` | A random province of at least `minArmies` loses `lose` |
+| `revolt` | `{ chance: 0.06, target: 'leader', lose: 'third' }` | The leader's largest province loses a third |
 
 `revolt.target` may be `'leader'`, `'random'` or `'none'`. Hazards are a
 rubber band and the revolt is the one that does the work — it is
@@ -131,7 +131,7 @@ to see that it is. A rubber band the player can't perceive reads as the
 game being arbitrary; one they can read as the game having an opinion.
 
 **Invariants, true under every configuration**: a hazard never takes an
-isle below 1 army, never eliminates a player, and never changes an
+province below 1 army, never eliminates a player, and never changes an
 owner. Ownership changes through attack only.
 
 ### `centres`
@@ -140,9 +140,9 @@ owner. Ownership changes through attack only.
 |---|---|---|
 | `count` | `3` | Production centres on the board |
 | `bonus` | `2` | Reinforcements per turn to the owner |
-| `wanderChance` | `0.25` | Per centre, per turn, to move to a random adjacent isle |
+| `wanderChance` | `0.25` | Per centre, per turn, to move to a random adjacent province |
 
-Placed at setup on isles nobody starts adjacent to where possible. They
+Placed at setup on provinces nobody starts adjacent to where possible. They
 are the map's moving objectives: they give a board of otherwise
 interchangeable rocks *places worth wanting*, and stop the wanting from
 being a one-time land grab. Of everything in this spec they are the
@@ -162,9 +162,9 @@ what to protect, it protects these.
 
 | Card | Effect |
 |---|---|
-| **Bombard** | Remove 2 armies from any enemy isle. Cannot capture. |
-| **Shield** | Until the player's next turn, one owned isle cannot be bombarded and wins ties even when attacked at a disadvantage. |
-| **Airlift** | Move armies between two *non-adjacent* owned isles, leaving 1 behind. |
+| **Bombard** | Remove 2 armies from any enemy province. Cannot capture. |
+| **Shield** | Until the player's next turn, one owned province cannot be bombarded and wins ties even when attacked at a disadvantage. |
+| **Airlift** | Move armies between two *non-adjacent* owned provinces, leaving 1 behind. |
 
 No set-collection and no escalating trade-in bonus. That mechanic is the
 main engine of Risk's famous forty-minute midgame, and Classic does not
@@ -178,7 +178,7 @@ turn; the first satisfied ends the game. Classic is a single
 economy, survival, turn limit, regicide — and per-player asymmetric
 objectives are in [SCENARIOS.md](SCENARIOS.md).
 
-`surrender.offer` (default on, at half the isles *and* half the armies)
+`surrender.offer` (default on, at half the provinces *and* half the armies)
 makes the AI players collectively offer to concede when the human's win
 is obvious. Lifted from *Isle Wars Pro*'s best idea: a conquest game is
 decided long before it is over, and making the player grind it out is
@@ -200,7 +200,26 @@ Attack resolution, one round per declared attack:
   `combat.capture` armies and leaving at least 1 behind.
 - `combat.failurePenalty` applies as described above.
 
-A player who captured at least one isle draws a card, per `cards.drawOn`.
+A player who captured at least one province draws a card, per `cards.drawOn`.
+
+## The board: islands divided into provinces
+
+A board is a handful of **islands**, each divided into **provinces**. The
+province is the unit of ownership — armies sit on it and it changes hands —
+and the island is the bonus group. That is the shape of *Isle Wars* (46
+countries across 9 continents), and of Risk and Imperialism 2: a few
+landmasses, subdivided. It is not a scatter of one-province islands.
+
+Adjacency comes in two kinds, and they are kept apart:
+
+- a **border** is land, and always joins two provinces on the same island;
+- a **sea lane** crosses water to a province on another island.
+
+Both are authored data, never derived from the shapes. The rules treat
+them alike for now — an attack is an attack — but the distinction is
+carried in the map because crossing water is the obvious thing a preset
+might one day want to make harder, and a map that has lost the
+distinction cannot get it back.
 
 ## Players
 
@@ -216,7 +235,7 @@ the same API.
 ## Time budget
 
 Classic targets a **complete four-player game in under five minutes** on
-a 14-isle board, with the human taking 10-15 turns. If playtesting runs
+a 14-province board, with the human taking 10-15 turns. If playtesting runs
 long, the levers in order of preference are: reinforcement rate up, map
 smaller, hazard frequency up. Adding rules is not on the list.
 
@@ -227,22 +246,24 @@ Classic's expense is a regression.
 
 ## The Classic board: `small-sea`
 
-14 isles in 4 archipelagos, hand-authored, tuned so no archipelago is
-trivially defensible:
+Four islands, 14 provinces, tuned so no island is trivially defensible:
 
-| Archipelago | Isles | Bonus | Note |
-|---|---|---|---|
-| North Reach | 4 | 3 | Two entrances, a long line |
-| The Chain | 4 | 3 | Strung out, hard to hold whole |
-| Warm Shoals | 3 | 2 | Compact, the natural first target |
-| The Teeth | 3 | 4 | Three entrances, worth more because it bleeds |
+| Island | Provinces | Bonus | Sea entrances | Note |
+|---|---|---|---|---|
+| North Reach | 4 | 3 | 2 | The largest; a long way round by land |
+| The Spine | 4 | 3 | 2 | Narrow, easily cut in half |
+| Warm Shoals | 3 | 2 | 3 | Small and cheap — the natural first target |
+| The Teeth | 3 | 4 | 3 | Worth more because it bleeds from three sides |
 
-Adjacency is an explicit symmetric sea-lane graph and must be connected.
-The board is laid out in its own coordinate space and framed by the
-camera, so it is resolution-independent and a window resize reframes
-rather than reflows. Hit targets stay generous from the start — a cheap
-habit now, an expensive retrofit when Android arrives. Exact isle names,
-polygons and lanes are Iteration 1's deliverable, not this document's.
+**Sea entrances** — the number of lanes reaching an island from elsewhere
+— is what actually decides how defensible it is. A large bonus behind
+three crossings is a trap worth setting, which is why The Teeth pay best.
+
+Borders and sea lanes are both explicit, symmetric and validated. The
+board is laid out in its own coordinate space and framed by the camera,
+so it is resolution-independent and a window resize reframes rather than
+reflows. Hit targets stay generous from the start — a cheap habit now, an
+expensive retrofit when Android arrives.
 
 Generated boards use the same `GameMap` structure and pass the same
 validator — see [SCENARIOS.md](SCENARIOS.md).
@@ -251,21 +272,21 @@ validator — see [SCENARIOS.md](SCENARIOS.md).
 
 Under Classic:
 
-- An attack from an isle below `minArmiesToAttack` is rejected.
-- An attack against a stronger isle is rejected — at equality *and* one
+- An attack from an province below `minArmiesToAttack` is rejected.
+- An attack against a stronger province is rejected — at equality *and* one
   either side of it.
-- A non-adjacent attack, and an attack on your own isle, are rejected.
+- A non-adjacent attack, and an attack on your own province, are rejected.
 - Defender wins ties.
-- The failure penalty transfers the isle and ends the phase.
+- The failure penalty transfers the province and ends the phase.
 - Capture advances at least the dice count and leaves at least 1 behind.
-- The reinforcement floor applies to a player down to one isle.
-- An archipelago bonus requires *every* isle in it.
+- The reinforcement floor applies to a player down to one province.
+- An island bonus requires *every* province in it.
 - One redeploy per turn; one card per turn; hand caps at `handMax`.
 - Eliminating the last opponent ends the game immediately, mid-phase.
 
 Across configurations:
 
-- **No hazard, under any configuration, takes an isle below 1 army,
+- **No hazard, under any configuration, takes an province below 1 army,
   eliminates a player, or changes an owner.**
 - `attackRule: 'classic'` permits the attacks `'match'` rejects, and
   changes nothing else.

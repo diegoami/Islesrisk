@@ -10,14 +10,19 @@ extends RefCounted
 ## pass instead of ten.
 
 const MIN_AREA := 1.0
+## How close two polygons must come before they count as sharing a border.
+## Clipped-Voronoi cells meet exactly in theory and within rounding in
+## practice, so this is float slack, not a fudge factor.
+const BORDER_TOLERANCE := 2.0
 
 
 static func problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
 	found.append_array(_identity_problems(map))
 	found.append_array(_membership_problems(map))
-	found.append_array(_lane_problems(map))
+	found.append_array(_crossing_problems(map))
 	found.append_array(_geometry_problems(map))
+	found.append_array(_island_contiguity_problems(map))
 	found.append_array(_connectivity_problems(map))
 	return found
 
@@ -28,133 +33,219 @@ static func is_valid(map: GameMap) -> bool:
 
 static func _identity_problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
-	if map.isles.is_empty():
-		found.append("map has no isles")
-	var seen_isles: Dictionary = {}
-	for isle: Isle in map.isles:
-		if isle.id.is_empty():
-			found.append("an isle has an empty id")
-		elif seen_isles.has(isle.id):
-			found.append("duplicate isle id '%s'" % isle.id)
-		seen_isles[isle.id] = true
-	var seen_groups: Dictionary = {}
-	for archipelago: Archipelago in map.archipelagos:
-		if archipelago.id.is_empty():
-			found.append("an archipelago has an empty id")
-		elif seen_groups.has(archipelago.id):
-			found.append("duplicate archipelago id '%s'" % archipelago.id)
-		seen_groups[archipelago.id] = true
-		if archipelago.bonus < 0:
-			found.append("archipelago '%s' has a negative bonus" % archipelago.id)
+	if map.provinces.is_empty():
+		found.append("map has no provinces")
+	if map.islands.is_empty():
+		found.append("map has no islands")
+	var seen_provinces: Dictionary = {}
+	for province: Province in map.provinces:
+		if province.id.is_empty():
+			found.append("a province has an empty id")
+		elif seen_provinces.has(province.id):
+			found.append("duplicate province id '%s'" % province.id)
+		seen_provinces[province.id] = true
+	var seen_islands: Dictionary = {}
+	for island: Island in map.islands:
+		if island.id.is_empty():
+			found.append("an island has an empty id")
+		elif seen_islands.has(island.id):
+			found.append("duplicate island id '%s'" % island.id)
+		seen_islands[island.id] = true
+		if island.bonus < 0:
+			found.append("island '%s' has a negative bonus" % island.id)
 	return found
 
 
-## Every isle in exactly one archipelago, and the two directions agreeing.
-## Membership stated twice is a cheap redundancy that catches hand-editing
-## mistakes the moment they happen.
+## Every province on exactly one island, with the two directions agreeing.
+## Membership stated twice is a cheap redundancy that catches the mistake a
+## hand-edit actually makes.
 static func _membership_problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
 	var claimed: Dictionary = {}
-	for archipelago: Archipelago in map.archipelagos:
-		if archipelago.isles.is_empty():
-			found.append("archipelago '%s' is empty" % archipelago.id)
-		for isle_id: String in archipelago.isles:
-			if not map.has_isle(isle_id):
-				found.append("archipelago '%s' lists unknown isle '%s'" % [archipelago.id, isle_id])
-			elif claimed.has(isle_id):
+	for island: Island in map.islands:
+		if island.provinces.is_empty():
+			found.append("island '%s' has no provinces" % island.id)
+		for province_id: String in island.provinces:
+			if not map.has_province(province_id):
+				found.append("island '%s' lists unknown province '%s'" % [island.id, province_id])
+			elif claimed.has(province_id):
 				found.append(
 					(
-						"isle '%s' is claimed by both '%s' and '%s'"
-						% [isle_id, str(claimed[isle_id]), archipelago.id]
+						"province '%s' is claimed by both '%s' and '%s'"
+						% [province_id, str(claimed[province_id]), island.id]
 					)
 				)
 			else:
-				claimed[isle_id] = archipelago.id
-	for isle: Isle in map.isles:
-		if map.archipelago(isle.archipelago) == null:
-			found.append("isle '%s' names unknown archipelago '%s'" % [isle.id, isle.archipelago])
-		elif not claimed.has(isle.id):
-			found.append("isle '%s' belongs to no archipelago's list" % isle.id)
-		elif str(claimed[isle.id]) != isle.archipelago:
+				claimed[province_id] = island.id
+	for province: Province in map.provinces:
+		if map.island(province.island) == null:
+			found.append("province '%s' names unknown island '%s'" % [province.id, province.island])
+		elif not claimed.has(province.id):
+			found.append("province '%s' is on no island's list" % province.id)
+		elif str(claimed[province.id]) != province.island:
 			found.append(
 				(
-					"isle '%s' says '%s' but is listed under '%s'"
-					% [isle.id, isle.archipelago, str(claimed[isle.id])]
+					"province '%s' says '%s' but is listed under '%s'"
+					% [province.id, province.island, str(claimed[province.id])]
 				)
 			)
 	return found
 
 
-static func _lane_problems(map: GameMap) -> Array[String]:
+## Borders are land and stay on one island; sea lanes cross water and never do.
+## Getting this backwards is the mistake that turns an archipelago of provinces
+## back into a scatter of one-province islands.
+static func _crossing_problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
-	for isle: Isle in map.isles:
-		var seen: Dictionary = {}
-		for neighbour_id: String in isle.neighbours:
-			if neighbour_id == isle.id:
-				found.append("isle '%s' is its own neighbour" % isle.id)
-				continue
-			if seen.has(neighbour_id):
-				found.append("isle '%s' lists '%s' twice" % [isle.id, neighbour_id])
-				continue
-			seen[neighbour_id] = true
-			var other := map.isle(neighbour_id)
-			if other == null:
-				found.append("isle '%s' has a lane to unknown isle '%s'" % [isle.id, neighbour_id])
-			elif not other.neighbours.has(isle.id):
-				found.append("lane '%s' -> '%s' is not returned" % [isle.id, neighbour_id])
+	for province: Province in map.provinces:
+		found.append_array(_one_direction(map, province, province.borders, true))
+		found.append_array(_one_direction(map, province, province.sea_lanes, false))
+	return found
+
+
+static func _one_direction(
+	map: GameMap, province: Province, targets: PackedStringArray, by_land: bool
+) -> Array[String]:
+	var kind := "border" if by_land else "sea lane"
+	var found: Array[String] = []
+	var seen: Dictionary = {}
+	for target_id: String in targets:
+		if target_id == province.id:
+			found.append("province '%s' has a %s to itself" % [province.id, kind])
+			continue
+		if seen.has(target_id):
+			found.append("province '%s' lists %s to '%s' twice" % [province.id, kind, target_id])
+			continue
+		seen[target_id] = true
+		var other := map.province(target_id)
+		if other == null:
+			found.append(
+				"province '%s' has a %s to unknown province '%s'" % [province.id, kind, target_id]
+			)
+			continue
+		var returned := (
+			other.borders.has(province.id) if by_land else other.sea_lanes.has(province.id)
+		)
+		if not returned:
+			found.append("%s '%s' -> '%s' is not returned" % [kind, province.id, target_id])
+		if by_land and other.island != province.island:
+			found.append(
+				(
+					"province '%s' borders '%s' by land but they are on different islands"
+					% [province.id, target_id]
+				)
+			)
+		if not by_land and other.island == province.island:
+			found.append(
+				(
+					"province '%s' has a sea lane to '%s' on the same island — use a border"
+					% [province.id, target_id]
+				)
+			)
 	return found
 
 
 static func _geometry_problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
-	for isle: Isle in map.isles:
-		if isle.polygon.size() < 3:
-			found.append("isle '%s' has fewer than 3 polygon points" % isle.id)
+	for province: Province in map.provinces:
+		if province.polygon.size() < 3:
+			found.append("province '%s' has fewer than 3 polygon points" % province.id)
 			continue
-		if isle.area() < MIN_AREA:
-			found.append("isle '%s' has a degenerate area" % isle.id)
-		if _self_intersects(isle.polygon):
-			found.append("isle '%s' has a self-intersecting polygon" % isle.id)
-		elif not Geometry2D.is_point_in_polygon(isle.label_at, isle.polygon):
-			found.append("isle '%s' has its label point outside its polygon" % isle.id)
+		if province.area() < MIN_AREA:
+			found.append("province '%s' has a degenerate area" % province.id)
+		if _self_intersects(province.polygon):
+			found.append("province '%s' has a self-intersecting polygon" % province.id)
+		elif not Geometry2D.is_point_in_polygon(province.label_at, province.polygon):
+			found.append("province '%s' has its label point outside its polygon" % province.id)
+
+	for province: Province in map.provinces:
+		for border_id: String in province.borders:
+			var other := map.province(border_id)
+			if other == null or province.id >= border_id:
+				continue
+			if not _polygons_touch(province.polygon, other.polygon):
+				found.append(
+					(
+						"provinces '%s' and '%s' claim a land border but their shapes do not meet"
+						% [province.id, border_id]
+					)
+				)
 	return found
 
 
-## Flood fill from the first isle. A board in two pieces is unplayable in a
-## game where the only way to reach an isle is a lane.
+## Each island must be one landmass: its provinces reachable from each other
+## by land alone. An island in two pieces is two islands.
+static func _island_contiguity_problems(map: GameMap) -> Array[String]:
+	var found: Array[String] = []
+	for island: Island in map.islands:
+		var members := map.provinces_of(island.id)
+		if members.size() <= 1:
+			continue
+		var reached: Dictionary = {}
+		var queue: Array[String] = [members[0].id]
+		reached[members[0].id] = true
+		while not queue.is_empty():
+			var current: String = queue.pop_back()
+			var province := map.province(current)
+			if province == null:
+				continue
+			for border_id: String in province.borders:
+				var other := map.province(border_id)
+				if other != null and other.island == island.id and not reached.has(border_id):
+					reached[border_id] = true
+					queue.append(border_id)
+		if reached.size() != members.size():
+			found.append(
+				(
+					"island '%s' is not one landmass — %d of %d provinces are cut off by land"
+					% [island.id, members.size() - reached.size(), members.size()]
+				)
+			)
+	return found
+
+
+## The whole board, by land and water together. A province nobody can reach is
+## a province nobody can take.
 static func _connectivity_problems(map: GameMap) -> Array[String]:
 	var found: Array[String] = []
-	if map.isles.is_empty():
+	if map.provinces.is_empty():
 		return found
 	var reached: Dictionary = {}
-	var queue: Array[String] = [map.isles[0].id]
-	reached[map.isles[0].id] = true
+	var queue: Array[String] = [map.provinces[0].id]
+	reached[map.provinces[0].id] = true
 	while not queue.is_empty():
 		var current: String = queue.pop_back()
-		var isle := map.isle(current)
-		if isle == null:
+		var province := map.province(current)
+		if province == null:
 			continue
-		for neighbour_id: String in isle.neighbours:
-			if not reached.has(neighbour_id) and map.has_isle(neighbour_id):
+		for neighbour_id: String in province.neighbours():
+			if not reached.has(neighbour_id) and map.has_province(neighbour_id):
 				reached[neighbour_id] = true
 				queue.append(neighbour_id)
-	if reached.size() != map.isles.size():
+	if reached.size() != map.provinces.size():
 		var stranded: Array[String] = []
-		for isle: Isle in map.isles:
-			if not reached.has(isle.id):
-				stranded.append(isle.id)
+		for province: Province in map.provinces:
+			if not reached.has(province.id):
+				stranded.append(province.id)
 		found.append(
 			(
-				"map is not connected — %d isle(s) unreachable: %s"
+				"map is not connected — %d province(s) unreachable: %s"
 				% [stranded.size(), ", ".join(stranded)]
 			)
 		)
 	return found
 
 
-## O(n^2) over polygon edges. Isles have a dozen or so points, so the simple
-## version is the right one; revisit only if a generator starts emitting
-## hundreds.
+static func _polygons_touch(a: PackedVector2Array, b: PackedVector2Array) -> bool:
+	for point: Vector2 in a:
+		for other: Vector2 in b:
+			if point.distance_squared_to(other) <= BORDER_TOLERANCE * BORDER_TOLERANCE:
+				return true
+	return false
+
+
+## O(n^2) over polygon edges. Provinces have a few dozen points at most, so the
+## simple version is the right one.
 static func _self_intersects(polygon: PackedVector2Array) -> bool:
 	var count := polygon.size()
 	for i: int in count:

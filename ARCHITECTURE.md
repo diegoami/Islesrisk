@@ -10,7 +10,7 @@ for why it is a re-take rather than a port.
 commitment: the board is generated or authored at any size, the rules
 are a data object, the number and kind of players is configuration, and
 victory is a list of predicates. What a player sees is a **preset** —
-Classic, Blitz, Archipelago — which is nothing but a named rule set with
+Classic, Blitz, Island — which is nothing but a named rule set with
 a map source attached. Scenario structure, map generation and the
 victory catalogue are in [SCENARIOS.md](SCENARIOS.md).
 
@@ -86,26 +86,40 @@ every guarantee above.
 
 ## Domain model
 
-**Isle** — one territory. Holds armies, has an owner, belongs to an
-archipelago, and connects to others by explicit sea lanes. Whether a map
-was drawn by hand or produced by the generator, it is this same
-structure and passes the same validator.
+**The board is islands divided into provinces** — a few landmasses, each
+subdivided, as in *Isle Wars* (46 countries across 9 continents), Risk, or
+Imperialism 2. The **province** is the unit of ownership; the **island** is
+the bonus group. Whether a map was drawn by hand or produced by the
+generator, it is this same structure and passes the same validator.
 
 ```
-Isle {
+Province {
   id            String
   name          String
-  archipelago   String
-  neighbours    Array[String]      // authored, symmetric, never derived
+  island        String
+  borders       Array[String]      // land, same island
+  sea_lanes     Array[String]      // water, another island
   polygon       PackedVector2Array // board coordinates
   label_at      Vector2
 }
+
+Island {
+  id, name      String
+  bonus         int                // for holding every province on it
+  provinces     Array[String]
+}
 ```
+
+Both kinds of crossing are authored and symmetric, never derived from the
+shapes. They are kept apart because crossing water is the obvious thing a
+rule set might one day make harder, and a map that has lost the
+distinction cannot get it back. `Province.neighbours()` returns the union,
+so rule code that does not care need not ask.
 
 The polygon is plain geometry, not a drawing: it feeds `Polygon2D`,
 `Line2D` coastlines, hit-testing and the art system alike. There is no
-per-isle artwork anywhere in the data, because the generator invents
-isles the artist will never see (see "Looking good").
+per-province artwork anywhere in the data, because the generator invents
+provinces the artist will never see (see "Looking good").
 
 **GameState** — everything needed to render a game and continue it.
 
@@ -176,7 +190,7 @@ route, in 2D:
 - **Water first.** An animated `CanvasItem` shader under everything —
   swell, caustics, foam that reads the coastline's distance field. Water
   is most of the screen and most of the impression.
-- **Coastlines, not outlines.** Each isle's polygon gets an inset shore
+- **Coastlines, not outlines.** Each province's polygon gets an inset shore
   band, a sand/rock gradient and a hand-drawn-feeling edge (a noise
   offset along the `Line2D`), so a machine-made polygon reads as drawn.
 - **Chart, not board.** The visual register is an illustrated nautical
@@ -188,7 +202,7 @@ route, in 2D:
   and a non-colour ownership cue are requirements, not polish.
 - **Hazards are the set piece**, and this is where the art direction and
   the design differentiator finally meet: a flood is a storm crossing
-  the map, a quake shakes the isle and cracks its shore, a revolt raises
+  the map, a quake shakes the province and cracks its shore, a revolt raises
   a flag and a smoke plume. These are the moments a player will screenshot.
 - **Juice.** Tweened army counts, a satisfying capture, camera nudges,
   layered ambience. Cheap, and most of what separates "clean" from

@@ -56,7 +56,7 @@ away.
 
 ```
 godot --path .        # run the game (or open the project and press F5)
-./tools/gates.sh      # all four gates: format, lint, test, export
+./tools/gates.sh      # all five gates: format, lint, test, smoke, export
 ```
 
 `tools/gates.sh` finds Godot through `GODOT_BIN`, falling back to `godot`
